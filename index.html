@@ -8,6 +8,11 @@
     <meta name="description" content="Një faqe për të kërkuar dhe këshilluar toponime të qytetit të Kukësit. Këshillimet tuaja i shqyrton përgjegjësi.">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
     <script>
         tailwind.config = {
             theme: {
@@ -85,8 +90,8 @@
                     <div id="listaRezultateve" class="space-y-4">
                         <!-- Rezultatet do të shfaqen këtu -->
                         <div class="text-center py-8 text-gray-500">
-                            <i class="fas fa-search fa-2x mb-4"></i>
-                            <p>Shkruaj në kërkim për të parë toponimet</p>
+                            <i class="fas fa-spinner fa-spin fa-2x mb-4"></i>
+                            <p>Duke ngarkuar toponimet...</p>
                         </div>
                     </div>
                 </div>
@@ -203,9 +208,9 @@
                     <p class="text-gray-500 text-sm mt-1">
                         &copy; <span id="vitiAktual"></span> - Të gjitha të drejtat e ruajtura
                     </p>
-                    <button onclick="window.debugTools.showData()" class="text-xs text-gray-400 hover:text-gray-600 mt-2">
-                        <i class="fas fa-database mr-1"></i>Shfaq të dhënat (për testim)
-                    </button>
+                    <p class="text-xs text-gray-400 mt-2">
+                        <i class="fas fa-database mr-1"></i>Powered by Firebase
+                    </p>
                 </div>
             </div>
         </div>
@@ -231,201 +236,90 @@
 
     <script>
         // ============================================
-        // MENAXHIMI I TË DHËNAVE ME LOCALSTORAGE
+        // KONFIGURIMI I FIREBASE
         // ============================================
-
-        // Çelësat për localStorage
-        const STORAGE_KEYS = {
-            TOPONIME: 'toponimet_te_miratuara',
-            KESHILLIME: 'keshillime_ne_pritje',
-            NEXT_TOPONIM_ID: 'next_toponim_id',
-            NEXT_KESHILLIM_ID: 'next_keshillim_id'
+        
+        // 🔥 VENDOS KËTU KONFIGURIMIN TËND TË FIREBASE
+        // Udhëzimet se si të merrësh këtë janë në fund të këtij skedari
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY_HERE",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
         };
 
-        // Të dhënat fillestare (përdoren vetëm nëse localStorage është bosh)
+        // Inicializo Firebase
+        let database;
+        let firebaseInitialized = false;
+
+        try {
+            if (firebaseConfig.apiKey !== "YOUR_API_KEY_HERE") {
+                firebase.initializeApp(firebaseConfig);
+                database = firebase.database();
+                firebaseInitialized = true;
+                console.log("✅ Firebase u lidh me sukses!");
+            } else {
+                console.warn("⚠️ Firebase nuk është konfiguruar. Shiko udhëzimet në fund të skedarit.");
+            }
+        } catch (error) {
+            console.error("❌ Gabim në inicializimin e Firebase:", error);
+        }
+
+        // ============================================
+        // TË DHËNAT FILLESTARE (për demonstrim)
+        // ============================================
+        
         const TË_DHËNAT_FILLESTARE = {
-            toponime: [
-                {
-                    "id": 1,
+            toponime: {
+                "1": {
                     "emri": "Mali i Gjallë",
                     "kuptimi": "Emër i dhënë për shkak të bimësisë së pasur dhe jetës së egër që gjendet aty.",
                     "vendndodhja": "Në lindje të qytetit",
                     "dataMiratimit": "2023-01-15",
                     "statusi": "miratuar"
                 },
-                {
-                    "id": 2,
+                "2": {
                     "emri": "Gurët e Kuq",
                     "kuptimi": "Shkëmbinj me ngjyrë të kuqe të hekurit për shkak të mineralit që përmbajnë.",
                     "vendndodhja": "Afër fshatit Shishtavec",
                     "dataMiratimit": "2023-02-20",
                     "statusi": "miratuar"
                 },
-                {
-                    "id": 3,
+                "3": {
                     "emri": "Ujëvara e Bardhë",
                     "kuptimi": "Ujëvarë me ujë të kulluar që duket e bardhë kur bie nga lartësia.",
                     "vendndodhja": "Në malin e Kukësit",
                     "dataMiratimit": "2023-03-10",
                     "statusi": "miratuar"
                 },
-                {
-                    "id": 4,
+                "4": {
                     "emri": "Fusha e Gjanicës",
                     "kuptimi": "Fushë pjellore ku rriten drithëra të ndryshme.",
                     "vendndodhja": "Jugperëndim i qytetit",
                     "dataMiratimit": "2023-04-05",
                     "statusi": "miratuar"
                 }
-            ],
-            keshillime: [
-                {
-                    "id": 101,
+            },
+            keshillime: {
+                "101": {
                     "emri": "Kodra e Dëborës",
                     "kuptimi": "Kodër që mbetet e zbardhur më gjatë se të tjerat pas reshjeve të dëborës.",
                     "vendndodhja": "Afër fshatit Kalis",
                     "dataKëshillimit": "2023-10-01",
                     "statusi": "në pritje"
                 },
-                {
-                    "id": 102,
+                "102": {
                     "emri": "Lumi i Ftohtë",
                     "kuptimi": "Lum me ujë të ftohtë edhe në ditët më të nxehta të verës.",
                     "vendndodhja": "Në kufirin me Malin e Zi",
                     "dataKëshillimit": "2023-10-05",
                     "statusi": "në pritje"
                 }
-            ]
+            }
         };
-
-        // Funksionet për localStorage
-        class MenaxhuesiTëDhënave {
-            // Merr toponimet e miratuara
-            static merrToponime() {
-                try {
-                    const data = localStorage.getItem(STORAGE_KEYS.TOPONIME);
-                    if (data) {
-                        return JSON.parse(data);
-                    }
-                } catch (error) {
-                    console.error('Gabim në leximin e toponimeve:', error);
-                }
-                // Nëse nuk ka të dhëna, vendos të dhënat fillestare
-                this.vendosToponime(TË_DHËNAT_FILLESTARE.toponime);
-                return TË_DHËNAT_FILLESTARE.toponime;
-            }
-
-            // Ruaj toponimet e miratuara
-            static vendosToponime(toponime) {
-                try {
-                    localStorage.setItem(STORAGE_KEYS.TOPONIME, JSON.stringify(toponime));
-                    return true;
-                } catch (error) {
-                    console.error('Gabim në ruajtjen e toponimeve:', error);
-                    return false;
-                }
-            }
-
-            // Merr këshillimet në pritje
-            static merrKëshillime() {
-                try {
-                    const data = localStorage.getItem(STORAGE_KEYS.KESHILLIME);
-                    if (data) {
-                        return JSON.parse(data);
-                    }
-                } catch (error) {
-                    console.error('Gabim në leximin e këshillimeve:', error);
-                }
-                // Nëse nuk ka të dhëna, vendos të dhënat fillestare
-                this.vendosKëshillime(TË_DHËNAT_FILLESTARE.keshillime);
-                return TË_DHËNAT_FILLESTARE.keshillime;
-            }
-
-            // Ruaj këshillimet në pritje
-            static vendosKëshillime(keshillime) {
-                try {
-                    localStorage.setItem(STORAGE_KEYS.KESHILLIME, JSON.stringify(keshillime));
-                    return true;
-                } catch (error) {
-                    console.error('Gabim në ruajtjen e këshillimeve:', error);
-                    return false;
-                }
-            }
-
-            // Merr ID-në e radhës për toponim
-            static merrIDRadhësToponim() {
-                const currentId = parseInt(localStorage.getItem(STORAGE_KEYS.NEXT_TOPONIM_ID) || '5');
-                localStorage.setItem(STORAGE_KEYS.NEXT_TOPONIM_ID, (currentId + 1).toString());
-                return currentId;
-            }
-
-            // Merr ID-në e radhës për këshillim
-            static merrIDRadhësKëshillim() {
-                const currentId = parseInt(localStorage.getItem(STORAGE_KEYS.NEXT_KESHILLIM_ID) || '103');
-                localStorage.setItem(STORAGE_KEYS.NEXT_KESHILLIM_ID, (currentId + 1).toString());
-                return currentId;
-            }
-
-            // Shto toponim të ri
-            static shtoToponim(toponim) {
-                const toponime = this.merrToponime();
-                toponime.push(toponim);
-                return this.vendosToponime(toponime);
-            }
-
-            // Shto këshillim të ri
-            static shtoKëshillim(keshillim) {
-                const keshillime = this.merrKëshillime();
-                keshillime.push(keshillim);
-                return this.vendosKëshillime(keshillime);
-            }
-
-            // Fshi toponim
-            static fshiToponim(id) {
-                const toponime = this.merrToponime();
-                const të_filtruara = toponime.filter(t => t.id !== id);
-                return this.vendosToponime(të_filtruara);
-            }
-
-            // Fshi këshillim
-            static fshiKëshillim(id) {
-                const keshillime = this.merrKëshillime();
-                const të_filtruara = keshillime.filter(k => k.id !== id);
-                return this.vendosKëshillime(të_filtruara);
-            }
-
-            // Mirato këshillim (hiqe nga pritja dhe shtoje në toponime)
-            static miratoKëshillim(id) {
-                const keshillime = this.merrKëshillime();
-                const keshillim = keshillime.find(k => k.id === id);
-                
-                if (!keshillim) return false;
-
-                // Krijo toponimin e ri
-                const toponimIRi = {
-                    id: this.merrIDRadhësToponim(),
-                    emri: keshillim.emri,
-                    kuptimi: keshillim.kuptimi,
-                    vendndodhja: keshillim.vendndodhja,
-                    dataMiratimit: new Date().toISOString().split('T')[0],
-                    statusi: "miratuar"
-                };
-
-                // Shto në toponime
-                if (!this.shtoToponim(toponimIRi)) return false;
-
-                // Hiqe nga këshillimet
-                return this.fshiKëshillim(id);
-            }
-
-            // Reseto të dhënat (vetëm për testim)
-            static resetoTëDhënat() {
-                this.vendosToponime(TË_DHËNAT_FILLESTARE.toponime);
-                this.vendosKëshillime(TË_DHËNAT_FILLESTARE.keshillime);
-                localStorage.setItem(STORAGE_KEYS.NEXT_TOPONIM_ID, '5');
-                localStorage.setItem(STORAGE_KEYS.NEXT_KESHILLIM_ID, '103');
-            }
-        }
 
         // ============================================
         // GJENDJA E APLIKACIONIT
@@ -434,19 +328,151 @@
         let ështëPërgjegjës = false;
         let veprimiNëPritje = null;
         let tëDhënatVeprimit = null;
+        let toponimeTëMiratuara = {};
+        let këshillimeNëPritje = {};
+
+        // ============================================
+        // MENAXHIMI I TË DHËNAVE ME FIREBASE
+        // ============================================
+
+        class MenaxhuesiFirebase {
+            // Inicializo të dhënat fillestare (vetëm herën e parë)
+            static async inicializoTëDhënat() {
+                if (!firebaseInitialized) return;
+
+                try {
+                    const toponimeRef = database.ref('toponime');
+                    const snapshot = await toponimeRef.once('value');
+                    
+                    if (!snapshot.exists()) {
+                        // Nëse databaza është bosh, vendos të dhënat fillestare
+                        await toponimeRef.set(TË_DHËNAT_FILLESTARE.toponime);
+                        await database.ref('keshillime').set(TË_DHËNAT_FILLESTARE.keshillime);
+                        console.log("✅ Të dhënat fillestare u vendosën në Firebase");
+                    }
+                } catch (error) {
+                    console.error("❌ Gabim në inicializimin e të dhënave:", error);
+                }
+            }
+
+            // Dëgjo ndryshimet në toponime
+            static dëgjoToponime(callback) {
+                if (!firebaseInitialized) return;
+                
+                database.ref('toponime').on('value', (snapshot) => {
+                    const data = snapshot.val() || {};
+                    toponimeTëMiratuara = data;
+                    callback(data);
+                });
+            }
+
+            // Dëgjo ndryshimet në këshillime
+            static dëgjoKëshillime(callback) {
+                if (!firebaseInitialized) return;
+                
+                database.ref('keshillime').on('value', (snapshot) => {
+                    const data = snapshot.val() || {};
+                    këshillimeNëPritje = data;
+                    callback(data);
+                });
+            }
+
+            // Shto këshillim të ri
+            static async shtoKëshillim(këshillim) {
+                if (!firebaseInitialized) {
+                    alert("Firebase nuk është konfiguruar. Shiko udhëzimet në kodin e faqes.");
+                    return false;
+                }
+
+                try {
+                    const newRef = database.ref('keshillime').push();
+                    await newRef.set(këshillim);
+                    return true;
+                } catch (error) {
+                    console.error("❌ Gabim në shtimin e këshillimit:", error);
+                    return false;
+                }
+            }
+
+            // Mirato këshillim (zhvendose në toponime)
+            static async miratoKëshillim(këshillimId, këshillim) {
+                if (!firebaseInitialized) return false;
+
+                try {
+                    // Krijo toponimin e ri
+                    const toponimIRi = {
+                        emri: këshillim.emri,
+                        kuptimi: këshillim.kuptimi,
+                        vendndodhja: këshillim.vendndodhja,
+                        dataMiratimit: new Date().toISOString().split('T')[0],
+                        statusi: "miratuar"
+                    };
+
+                    // Shto në toponime
+                    const newRef = database.ref('toponime').push();
+                    await newRef.set(toponimIRi);
+
+                    // Fshi nga këshillimet
+                    await database.ref(`keshillime/${këshillimId}`).remove();
+
+                    return true;
+                } catch (error) {
+                    console.error("❌ Gabim në miratimin e këshillimit:", error);
+                    return false;
+                }
+            }
+
+            // Fshi këshillim
+            static async fshiKëshillim(këshillimId) {
+                if (!firebaseInitialized) return false;
+
+                try {
+                    await database.ref(`keshillime/${këshillimId}`).remove();
+                    return true;
+                } catch (error) {
+                    console.error("❌ Gabim në fshirjen e këshillimit:", error);
+                    return false;
+                }
+            }
+
+            // Fshi toponim
+            static async fshiToponim(toponimId) {
+                if (!firebaseInitialized) return false;
+
+                try {
+                    await database.ref(`toponime/${toponimId}`).remove();
+                    return true;
+                } catch (error) {
+                    console.error("❌ Gabim në fshirjen e toponimit:", error);
+                    return false;
+                }
+            }
+        }
 
         // ============================================
         // FUNKSIONET KRYESORE
         // ============================================
 
-        // Inicializimi i faqes
-        function inicializoFaqen() {
+        async function inicializoFaqen() {
             // Vendos vitin aktual
             document.getElementById("vitiAktual").textContent = new Date().getFullYear();
             
-            // Ngarko të dhënat nga localStorage
-            ngarkoToponimetTëMiratuara();
-            ngarkoKëshillimetNëPritje();
+            // Inicializo të dhënat fillestare në Firebase
+            await MenaxhuesiFirebase.inicializoTëDhënat();
+            
+            // Dëgjo ndryshimet në të dhëna
+            MenaxhuesiFirebase.dëgjoToponime((data) => {
+                kryejKërkimin();
+                if (ështëPërgjegjës) {
+                    ngarkoToponimetTëMiratuara();
+                }
+            });
+
+            MenaxhuesiFirebase.dëgjoKëshillime((data) => {
+                if (ështëPërgjegjës) {
+                    ngarkoKëshillimetNëPritje();
+                }
+            });
             
             // Shto event listeners
             document.getElementById("butoniKërkimit").addEventListener("click", kryejKërkimin);
@@ -462,7 +488,7 @@
             document.getElementById("butoniKonfirmo").addEventListener("click", konfirmoVeprimin);
             
             // Kërko menjëherë për të shfaqur të gjitha toponimet
-            kryejKërkimin();
+            setTimeout(kryejKërkimin, 1000);
         }
 
         // ============================================
@@ -471,7 +497,11 @@
 
         function kryejKërkimin() {
             const kërkim = document.getElementById("hyrjaKërkimit").value.toLowerCase().trim();
-            const tëGjithaToponimet = MenaxhuesiTëDhënave.merrToponime();
+            const tëGjithaToponimet = Object.entries(toponimeTëMiratuara).map(([id, data]) => ({
+                id,
+                ...data
+            }));
+            
             let rezultatet = [];
             
             if (kërkim === "") {
@@ -534,7 +564,7 @@
         // FUNKSIONET E KËSHILLIMIT
         // ============================================
 
-        function përpunoFormënKëshillimit(event) {
+        async function përpunoFormënKëshillimit(event) {
             event.preventDefault();
             
             const emri = document.getElementById("emriToponimit").value.trim();
@@ -547,7 +577,6 @@
             }
             
             const këshillimIRi = {
-                id: MenaxhuesiTëDhënave.merrIDRadhësKëshillim(),
                 emri: emri,
                 kuptimi: kuptimi,
                 vendndodhja: vendndodhja || "Nuk është specifikuar",
@@ -555,21 +584,18 @@
                 statusi: "në pritje"
             };
             
-            // Ruaj në localStorage
-            if (MenaxhuesiTëDhënave.shtoKëshillim(këshillimIRi)) {
+            // Ruaj në Firebase
+            const success = await MenaxhuesiFirebase.shtoKëshillim(këshillimIRi);
+            
+            if (success) {
                 // Pastro formën
                 document.getElementById("formaKëshillimit").reset();
-                
-                // GJITHMONË përditëso listën e këshillimeve (edhe nëse përgjegjësi nuk është aktiv)
-                ngarkoKëshillimetNëPritje();
-                
-                // Trego një njoftim më të detajuar
-                const numërKëshillimesh = MenaxhuesiTëDhënave.merrKëshillime().length;
                 
                 // Trego info box për përdoruesin
                 const infoBox = document.getElementById("infoKëshillimi");
                 const mesazhiInfo = document.getElementById("mesazhiInfo");
-                mesazhiInfo.textContent = `Këshillimi për "${emri}" është ruajtur dhe pret shqyrtim nga përgjegjësi. Gjithsej ka ${numërKëshillimesh} këshillime në pritje.`;
+                const numërKëshillimesh = Object.keys(këshillimeNëPritje).length;
+                mesazhiInfo.textContent = `Këshillimi për "${emri}" është ruajtur në databazë dhe pret shqyrtim nga përgjegjësi. Gjithsej ka ${numërKëshillimesh} këshillime në pritje.`;
                 infoBox.classList.remove("hidden");
                 
                 // Fsheh info box pas 10 sekondash
@@ -579,7 +605,7 @@
                 
                 shfaqNjoftim(
                     "Sukses", 
-                    `Këshillimi juaj për "${emri}" u ruajt me sukses!`, 
+                    `Këshillimi juaj për "${emri}" u ruajt me sukses! Përgjegjësi do ta shqyrtojë atë.`, 
                     "theks"
                 );
             } else {
@@ -593,7 +619,6 @@
 
         function ndërroMënyrënPërgjegjësi() {
             if (!ështëPërgjegjës) {
-                // Kërko fjalëkalimin
                 const fjalëkalimi = prompt("Futni fjalëkalimin për të hyrë si përgjegjës:");
                 
                 if (fjalëkalimi === "admin123") {
@@ -605,7 +630,6 @@
                     document.getElementById("statusPërgjegjësi").classList.remove("hidden");
                     document.getElementById("seksioniPërgjegjësi").classList.remove("hidden");
                     
-                    // Ngarko të dhënat e përgjegjësit
                     ngarkoKëshillimetNëPritje();
                     ngarkoToponimetTëMiratuara();
                     
@@ -628,11 +652,15 @@
         function ngarkoKëshillimetNëPritje() {
             const kontejneri = document.getElementById("listaKëshillimeveNëPritje");
             const numëruesi = document.getElementById("numëruesiNëPritje");
-            const këshillimeNëPritje = MenaxhuesiTëDhënave.merrKëshillime();
             
-            numëruesi.textContent = këshillimeNëPritje.length;
+            const këshillimeArray = Object.entries(këshillimeNëPritje).map(([id, data]) => ({
+                firebaseId: id,
+                ...data
+            }));
             
-            if (këshillimeNëPritje.length === 0) {
+            numëruesi.textContent = këshillimeArray.length;
+            
+            if (këshillimeArray.length === 0) {
                 kontejneri.innerHTML = `
                     <div class="text-center py-8 text-gray-500">
                         <i class="fas fa-inbox fa-2x mb-4"></i>
@@ -644,7 +672,7 @@
             }
             
             let html = "";
-            këshillimeNëPritje.forEach(këshillim => {
+            këshillimeArray.forEach(këshillim => {
                 html += `
                     <div class="border border-kufi rounded-lg p-4 bg-gray-50">
                         <div class="flex justify-between items-start mb-3">
@@ -659,10 +687,10 @@
                                 <i class="fas fa-map-marker-alt mr-1"></i>${escapeHtml(këshillim.vendndodhja)}
                             </div>
                             <div class="flex space-x-2">
-                                <button onclick="miratoKëshillimin(${këshillim.id})" class="bg-theks text-white px-3 py-1 rounded text-sm hover:bg-green-700 kalim">
+                                <button onclick="miratoKëshillimin('${këshillim.firebaseId}')" class="bg-theks text-white px-3 py-1 rounded text-sm hover:bg-green-700 kalim">
                                     <i class="fas fa-check mr-1"></i>Mirato
                                 </button>
-                                <button onclick="fshiKëshillimin(${këshillim.id})" class="bg-dytësor text-white px-3 py-1 rounded text-sm hover:bg-red-700 kalim">
+                                <button onclick="fshiKëshillimin('${këshillim.firebaseId}')" class="bg-dytësor text-white px-3 py-1 rounded text-sm hover:bg-red-700 kalim">
                                     <i class="fas fa-times mr-1"></i>Refuzo
                                 </button>
                             </div>
@@ -676,9 +704,13 @@
 
         function ngarkoToponimetTëMiratuara() {
             const trupTabelës = document.getElementById("tabelaToponimeve");
-            const toponimeTëMiratuara = MenaxhuesiTëDhënave.merrToponime();
             
-            if (toponimeTëMiratuara.length === 0) {
+            const toponimeArray = Object.entries(toponimeTëMiratuara).map(([id, data]) => ({
+                firebaseId: id,
+                ...data
+            }));
+            
+            if (toponimeArray.length === 0) {
                 trupTabelës.innerHTML = `
                     <tr>
                         <td colspan="4" class="px-4 py-8 text-center text-gray-500">
@@ -690,14 +722,14 @@
             }
             
             let html = "";
-            toponimeTëMiratuara.forEach(toponim => {
+            toponimeArray.forEach(toponim => {
                 html += `
                     <tr>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHtml(toponim.emri)}</td>
                         <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(toponim.kuptimi)}</td>
                         <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(toponim.vendndodhja)}</td>
                         <td class="px-4 py-3 text-sm font-medium">
-                            <button onclick="fshiToponim(${toponim.id})" class="text-dytësor hover:text-red-700 kalim">
+                            <button onclick="fshiToponim('${toponim.firebaseId}')" class="text-dytësor hover:text-red-700 kalim">
                                 <i class="fas fa-trash mr-1"></i>Fshi
                             </button>
                         </td>
@@ -712,39 +744,36 @@
         // VEPRIMET E PËRGJEGJËSIT
         // ============================================
 
-        function miratoKëshillimin(id) {
-            const këshillimeNëPritje = MenaxhuesiTëDhënave.merrKëshillime();
-            const këshillim = këshillimeNëPritje.find(k => k.id === id);
+        function miratoKëshillimin(firebaseId) {
+            const këshillim = këshillimeNëPritje[firebaseId];
             if (!këshillim) return;
             
             veprimiNëPritje = "mirato";
-            tëDhënatVeprimit = { id, këshillim };
+            tëDhënatVeprimit = { firebaseId, këshillim };
             
             document.getElementById("titulliModalit").textContent = "Mirato Këshillimin";
             document.getElementById("mesazhiModalit").textContent = `A jeni i sigurt që dëshironi të miratoni toponimin "${këshillim.emri}"?`;
             document.getElementById("modalKonfirmimi").classList.remove("hidden");
         }
 
-        function fshiKëshillimin(id) {
-            const këshillimeNëPritje = MenaxhuesiTëDhënave.merrKëshillime();
-            const këshillim = këshillimeNëPritje.find(k => k.id === id);
+        function fshiKëshillimin(firebaseId) {
+            const këshillim = këshillimeNëPritje[firebaseId];
             if (!këshillim) return;
             
             veprimiNëPritje = "fshiKëshillim";
-            tëDhënatVeprimit = { id, këshillim };
+            tëDhënatVeprimit = { firebaseId, këshillim };
             
             document.getElementById("titulliModalit").textContent = "Refuzo Këshillimin";
             document.getElementById("mesazhiModalit").textContent = `A jeni i sigurt që dëshironi të refuzoni këshillimin për toponimin "${këshillim.emri}"?`;
             document.getElementById("modalKonfirmimi").classList.remove("hidden");
         }
 
-        function fshiToponim(id) {
-            const toponimeTëMiratuara = MenaxhuesiTëDhënave.merrToponime();
-            const toponim = toponimeTëMiratuara.find(t => t.id === id);
+        function fshiToponim(firebaseId) {
+            const toponim = toponimeTëMiratuara[firebaseId];
             if (!toponim) return;
             
             veprimiNëPritje = "fshiToponim";
-            tëDhënatVeprimit = { id, toponim };
+            tëDhënatVeprimit = { firebaseId, toponim };
             
             document.getElementById("titulliModalit").textContent = "Fshi Toponim";
             document.getElementById("mesazhiModalit").textContent = `A jeni i sigurt që dëshironi të fshini toponimin "${toponim.emri}"?`;
@@ -761,51 +790,38 @@
             tëDhënatVeprimit = null;
         }
 
-        function konfirmoVeprimin() {
+        async function konfirmoVeprimin() {
             if (!veprimiNëPritje || !tëDhënatVeprimit) return;
             
+            let success = false;
+            
             if (veprimiNëPritje === "mirato") {
-                const { id, këshillim } = tëDhënatVeprimit;
+                const { firebaseId, këshillim } = tëDhënatVeprimit;
+                success = await MenaxhuesiFirebase.miratoKëshillim(firebaseId, këshillim);
                 
-                if (MenaxhuesiTëDhënave.miratoKëshillim(id)) {
-                    // Përditëso të dyja listat
-                    ngarkoKëshillimetNëPritje();
-                    ngarkoToponimetTëMiratuara();
-                    
-                    // Përditëso rezultatet e kërkimit
-                    kryejKërkimin();
-                    
+                if (success) {
                     shfaqNjoftim("Sukses", `Toponimi "${këshillim.emri}" u miratua me sukses dhe është i dukshëm për të gjithë.`, "theks");
-                } else {
-                    shfaqNjoftim("Gabim", "Ndodhi një gabim gjatë miratimit të këshillimit.", "dytësor");
                 }
             }
             else if (veprimiNëPritje === "fshiKëshillim") {
-                const { id, këshillim } = tëDhënatVeprimit;
+                const { firebaseId, këshillim } = tëDhënatVeprimit;
+                success = await MenaxhuesiFirebase.fshiKëshillim(firebaseId);
                 
-                if (MenaxhuesiTëDhënave.fshiKëshillim(id)) {
-                    // Përditëso listën
-                    ngarkoKëshillimetNëPritje();
-                    
+                if (success) {
                     shfaqNjoftim("Sukses", `Këshillimi për toponimin "${këshillim.emri}" u refuzua.`, "kryesor");
-                } else {
-                    shfaqNjoftim("Gabim", "Ndodhi një gabim gjatë refuzimit të këshillimit.", "dytësor");
                 }
             }
             else if (veprimiNëPritje === "fshiToponim") {
-                const { id, toponim } = tëDhënatVeprimit;
+                const { firebaseId, toponim } = tëDhënatVeprimit;
+                success = await MenaxhuesiFirebase.fshiToponim(firebaseId);
                 
-                if (MenaxhuesiTëDhënave.fshiToponim(id)) {
-                    // Përditëso listën
-                    ngarkoToponimetTëMiratuara();
-                    
-                    // Përditëso rezultatet e kërkimit
-                    kryejKërkimin();
-                    
+                if (success) {
                     shfaqNjoftim("Sukses", `Toponimi "${toponim.emri}" u fshi me sukses.`, "kryesor");
-                } else {
-                    shfaqNjoftim("Gabim", "Ndodhi një gabim gjatë fshirjes së toponimit.", "dytësor");
                 }
+            }
+            
+            if (!success) {
+                shfaqNjoftim("Gabim", "Ndodhi një gabim gjatë veprimit. Ju lutem provoni përsëri.", "dytësor");
             }
             
             fshehModal();
@@ -842,7 +858,6 @@
             
             document.body.appendChild(njoftim);
             
-            // Hiqe njoftimin pas 5 sekondave
             setTimeout(() => {
                 if (njoftim.parentElement) {
                     njoftim.remove();
@@ -850,7 +865,6 @@
             }, 5000);
         }
 
-        // Funksion për të shmangur XSS
         function escapeHtml(text) {
             const map = {
                 '&': '&amp;',
@@ -867,34 +881,89 @@
         // ============================================
 
         document.addEventListener("DOMContentLoaded", inicializoFaqen);
-
-        // Për testim dhe verifikim
-        window.debugTools = {
-            resetData: () => {
-                if (confirm("A jeni i sigurt që dëshironi të fshini të gjitha të dhënat dhe të resetoni në gjendjen fillestare?")) {
-                    MenaxhuesiTëDhënave.resetoTëDhënat();
-                    location.reload();
-                }
-            },
-            showData: () => {
-                const toponime = MenaxhuesiTëDhënave.merrToponime();
-                const keshillime = MenaxhuesiTëDhënave.merrKëshillime();
-                
-                let mesazhi = `=== TË DHËNAT NË LOCALSTORAGE ===\n\n`;
-                mesazhi += `📍 TOPONIME TË MIRATUARA: ${toponime.length}\n`;
-                toponime.forEach(t => {
-                    mesazhi += `  • ${t.emri}\n`;
-                });
-                mesazhi += `\n⏳ KËSHILLIME NË PRITJE: ${keshillime.length}\n`;
-                keshillime.forEach(k => {
-                    mesazhi += `  • ${k.emri} (ID: ${k.id})\n`;
-                });
-                
-                alert(mesazhi);
-                console.log("Toponime:", toponime);
-                console.log("Këshillime:", keshillime);
-            }
-        };
     </script>
 </body>
 </html>
+
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+🔥 SI TË KONFIGUROSH FIREBASE (5 minuta) 🔥
+═══════════════════════════════════════════════════════════════════════════════
+
+HAPI 1: Krijo një llogari Firebase (falas)
+-------------------------------------------
+1. Shko në: https://console.firebase.google.com/
+2. Kliko "Add project" ose "Create a project"
+3. Vendos një emër për projektin (p.sh. "toponimet-kukes")
+4. Kliko "Continue" disa herë
+5. Prit disa sekonda derisa projekti të krijohet
+
+HAPI 2: Aktivizo Realtime Database
+-----------------------------------
+1. Në menunë e majtë, kliko "Build" → "Realtime Database"
+2. Kliko "Create Database"
+3. Zgjidh një vendndodhje (p.sh. "europe-west1" për Evropë)
+4. Për "Security rules", zgjidh "Start in TEST MODE" (për demonstrim)
+   ⚠️ RËNDËSISHME: Test mode është e sigurt vetëm për 30 ditë!
+5. Kliko "Enable"
+
+HAPI 3: Merr konfigurimin e Firebase
+-------------------------------------
+1. Kliko ikonën e ingranazh (⚙️) në menunë e majtë
+2. Kliko "Project settings"
+3. Poshtë në "Your apps", kliko ikonën e web-it (</>)
+4. Vendos një nickname për aplikacionin (p.sh. "web-app")
+5. MOS kliko "Also set up Firebase Hosting"
+6. Kliko "Register app"
+7. Do të shfaqet kodi me firebaseConfig - KOPJO TË GJITHA TË DHËNAT!
+
+Duket diçka si kjo:
+```
+const firebaseConfig = {
+  apiKey: "AIzaSyB1234567890abcdefghijklmnop",
+  authDomain: "toponimet-kukes.firebaseapp.com",
+  databaseURL: "https://toponimet-kukes-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "toponimet-kukes",
+  storageBucket: "toponimet-kukes.appspot.com",
+  messagingSenderId: "123456789012",
+  appId: "1:123456789012:web:abc123def456"
+};
+```
+
+HAPI 4: Vendos konfigurimin në këtë skedar
+-------------------------------------------
+1. Gjej rreshtin 245 në këtë skedar (ku thotë "YOUR_API_KEY_HERE")
+2. Zëvendëso të gjithë objektin firebaseConfig me atë që kopjove nga Firebase
+3. Ruaj skedarin
+4. Hap në shfletues - GATI! ✅
+
+HAPI 5: Rregullat e Sigurisë (PAS testimit)
+-------------------------------------------
+Kur të jesh gati për përdorim real, shko te Realtime Database → Rules
+dhe ndrysho rregullat në:
+
+```json
+{
+  "rules": {
+    "toponime": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "keshillime": {
+      ".read": "auth != null",
+      ".write": true
+    }
+  }
+}
+```
+
+Kjo lejon:
+- Të gjithë mund të lexojnë toponimet e miratuara
+- Vetëm admini mund të modifikojë toponimet
+- Të gjithë mund të dërgojnë këshillime
+- Vetëm admini mund të shohë këshillimet
+
+═══════════════════════════════════════════════════════════════════════════════
+🎉 GATI! Tani faqja funksionon në të gjitha pajisjet! 🎉
+═══════════════════════════════════════════════════════════════════════════════
+-->
