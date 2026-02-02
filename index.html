@@ -4,220 +4,672 @@
     <base target="_self">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Toponimet e Kukësit</title>
-
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <title>Toponimet e Kukësit - Kërkimi dhe Këshillimi</title>
+    <meta name="description" content="Një faqe për të kërkuar dhe këshilluar toponime të qytetit të Kukësit. Këshillimet tuaja i shqyrton përgjegjësi.">
     <script src="https://cdn.tailwindcss.com"></script>
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        blu_kukës: "#1e40af",
-                        gjelbër_kukës: "#059669",
-                        errët: "#1f2937"
+                        kryesor: "#1e40af",
+                        dytësor: "#dc2626",
+                        theks: "#059669",
+                        sfond: "#f3f4f6",
+                        kufi: "#d1d5db"
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .hije-kutie { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .hije-butoni { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+        .hije-butoni:hover { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .hije-hyrje { box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05); }
+        .kalim { transition: all 0.3s ease; }
+    </style>
 </head>
-
-<body class="min-h-screen bg-gradient-to-br from-blue-50 to-emerald-50">
-
-<!-- ================= HEADER ================= -->
-<header class="sticky top-0 z-50 bg-white shadow">
-    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-        <h1 class="text-xl font-bold text-errët">
-            <i class="fas fa-mountain text-blu_kukës mr-2"></i>
-            Toponimet<span class="text-blu_kukës">Kukës</span>
-        </h1>
-
-        <div class="space-x-2">
-            <button onclick="openWordForm()" class="bg-blu_kukës text-white px-4 py-2 rounded">
-                + Shto Toponim
-            </button>
-            <button onclick="openAdminPanel()" class="bg-black text-white px-4 py-2 rounded">
-                Administrator
-            </button>
-        </div>
-    </div>
-</header>
-
-<!-- ================= RESULTS ================= -->
-<main class="container mx-auto px-4 py-10">
-    <div id="resultsContainer" class="grid md:grid-cols-3 gap-6"></div>
-</main>
-
-<!-- ================= ADD MODAL ================= -->
-<div id="addWordModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center">
-    <div class="bg-white p-6 rounded w-96 space-y-3">
-        <h2 class="text-xl font-bold">Shto Toponim</h2>
-
-        <input id="newWordName" placeholder="Emri" class="w-full border p-2">
-        <textarea id="newWordMeaning" placeholder="Kuptimi" class="w-full border p-2"></textarea>
-
-        <select id="newWordType" class="w-full border p-2">
-            <option value="">Lloji</option>
-            <option value="lum">Lum</option>
-            <option value="mal">Mal</option>
-            <option value="fshat">Fshat</option>
-        </select>
-
-        <input id="newWordLocation" placeholder="Vendndodhja" class="w-full border p-2">
-        <input id="newWordEmail" placeholder="Email" class="w-full border p-2">
-
-        <div class="flex justify-between">
-            <button onclick="closeWordForm()">Anulo</button>
-            <button onclick="submitNewWord()" class="bg-blu_kukës text-white px-4 py-1 rounded">
-                Dërgo
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- ================= ADMIN PANEL ================= -->
-<div id="adminPanel" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center">
-    <div class="bg-white p-6 rounded w-[600px] max-h-[90vh] overflow-y-auto">
-
-        <div id="adminLogin">
-            <h2 class="text-xl font-bold mb-4">Paneli i Administratorit</h2>
-            <input id="adminPassword" type="password" placeholder="Fjalëkalimi"
-                   class="w-full border p-2 mb-3">
-            <button onclick="loginAdmin()" class="w-full bg-blu_kukës text-white py-2 rounded">
-                Hyr
-            </button>
-        </div>
-
-        <div id="adminContent" class="hidden">
-            <h3 class="font-bold mb-4">Toponime në pritje</h3>
-            <div id="pendingWordsContainer" class="space-y-3"></div>
-        </div>
-
-    </div>
-</div>
-
-<script>
-/* ================= GLOBAL ================= */
-const ADMIN_PASSWORD = "admin123";
-let toponymsData = [];
-let pendingToponyms = [];
-
-/* ================= STORAGE ================= */
-function loadData() {
-    toponymsData = JSON.parse(localStorage.getItem("toponymsData")) || [];
-    pendingToponyms = JSON.parse(localStorage.getItem("pendingToponyms")) || [];
-}
-
-function saveData() {
-    localStorage.setItem("toponymsData", JSON.stringify(toponymsData));
-    localStorage.setItem("pendingToponyms", JSON.stringify(pendingToponyms));
-}
-
-/* ================= INIT ================= */
-document.addEventListener("DOMContentLoaded", () => {
-    loadData();
-    displayAllToponyms();
-});
-
-/* ================= DISPLAY ================= */
-function displayAllToponyms() {
-    const c = document.getElementById("resultsContainer");
-    c.innerHTML = "";
-
-    toponymsData.forEach(t => {
-        c.innerHTML += `
-        <div class="bg-white p-5 rounded shadow">
-            <h3 class="font-bold text-lg">${t.name}</h3>
-            <p class="text-gray-600">${t.meaning}</p>
-            <small>${t.location}</small>
-        </div>`;
-    });
-}
-
-/* ================= ADD ================= */
-function openWordForm() {
-    addWordModal.classList.remove("hidden");
-}
-function closeWordForm() {
-    addWordModal.classList.add("hidden");
-}
-function submitNewWord() {
-    const newToponym = {
-        id: Date.now(),
-        name: newWordName.value,
-        meaning: newWordMeaning.value,
-        type: newWordType.value,
-        location: newWordLocation.value,
-        email: newWordEmail.value
-    };
-
-    pendingToponyms.push(newToponym);
-    saveData();
-
-    closeWordForm();
-    alert("Toponimi u dërgua për aprovim!");
-}
-
-/* ================= ADMIN ================= */
-function openAdminPanel() {
-    adminPanel.classList.remove("hidden");
-}
-
-function loginAdmin() {
-    if (adminPassword.value !== ADMIN_PASSWORD) {
-        alert("Fjalëkalim i gabuar");
-        return;
-    }
-
-    loadData(); // ✅ FIX I SAKTË DHE FINAL
-
-    adminLogin.classList.add("hidden");
-    adminContent.classList.remove("hidden");
-    displayPendingWords();
-}
-
-function displayPendingWords() {
-    const c = document.getElementById("pendingWordsContainer");
-    c.innerHTML = "";
-
-    if (pendingToponyms.length === 0) {
-        c.innerHTML = "<p>Nuk ka sugjerime</p>";
-        return;
-    }
-
-    pendingToponyms.forEach((t, i) => {
-        c.innerHTML += `
-        <div class="border p-4 rounded">
-            <b>${t.name}</b>
-            <p>${t.meaning}</p>
-            <div class="mt-2 space-x-2">
-                <button onclick="approve(${i})" class="bg-green-600 text-white px-3 py-1 rounded">
-                    Aprovo
-                </button>
-                <button onclick="reject(${i})" class="bg-red-600 text-white px-3 py-1 rounded">
-                    Refuzo
-                </button>
+<body class="min-h-screen bg-sfond text-gray-800">
+    <header class="bg-white shije-kutie">
+        <nav class="container mx-auto px-4 py-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h1 class="text-2xl md:text-3xl font-bold text-kryesor">
+                        <i class="fas fa-mountain mr-2"></i>Toponimet e Kukësit
+                    </h1>
+                    <p class="text-gray-600 mt-1">Gjej dhe këshillo emra vendesh</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="ndërroModal" class="bg-theks text-white px-4 py-2 rounded-lg kalim hover:bg-green-700 hije-butoni">
+                        <i class="fas fa-user-shield mr-2"></i>Mënyra Përgjegjësi
+                    </button>
+                    <div class="hidden md:block text-sm text-gray-500" id="statusPërgjegjësi">
+                        <i class="fas fa-user mr-1"></i>Vizitor
+                    </div>
+                </div>
             </div>
-        </div>`;
-    });
-}
+        </nav>
+    </header>
 
-function approve(i) {
-    toponymsData.push(pendingToponyms[i]);
-    pendingToponyms.splice(i, 1);
-    saveData();
-    displayPendingWords();
-    displayAllToponyms();
-}
+    <main class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Seksioni i Kërkimit -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">
+                    <i class="fas fa-search mr-2"></i>Kërko Toponime
+                </h2>
+                <div class="relative mb-8">
+                    <div class="flex">
+                        <input type="text" id="hyrjaKërkimit" placeholder="Shkruaj një toponim për të kërkuar..." class="flex-grow px-4 py-3 border border-kufi rounded-l-lg focus:outline-none focus:ring-2 focus:ring-kryesor focus:border-transparent hije-hyrje">
+                        <button id="butoniKërkimit" class="bg-kryesor text-white px-6 py-3 rounded-r-lg hover:bg-blue-800 kalim hije-butoni">
+                            <i class="fas fa-search mr-2"></i>Kërko
+                        </button>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-500">
+                        <i class="fas fa-info-circle mr-1"></i>Kërko sipas emrit të toponimit ose pjesë të kuptimit
+                    </div>
+                </div>
 
-function reject(i) {
-    pendingToponyms.splice(i, 1);
-    saveData();
-    displayPendingWords();
-}
-</script>
+                <!-- Rezultatet e Kërkimit -->
+                <div id="kontejneriRezultateve" class="bg-white rounded-lg p-6 hije-kutie">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-list mr-2"></i>Rezultatet e Kërkimit (<span id="numëruesiRezultateve">0</span>)
+                    </h3>
+                    <div id="listaRezultateve" class="space-y-4">
+                        <!-- Rezultatet do të shfahen këtu -->
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-search fa-2x mb-4"></i>
+                            <p>Shkruaj në kërkim për të parë toponimet</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
+            <!-- Seksioni i Këshillimit -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">
+                    <i class="fas fa-lightbulb mr-2"></i>Këshillo një Toponim
+                </h2>
+                <div class="bg-white rounded-lg p-6 hije-kutie">
+                    <form id="formaKëshillimit" class="space-y-6">
+                        <div>
+                            <label for="emriToponimit" class="block text-gray-700 font-medium mb-2">
+                                <i class="fas fa-map-marker-alt mr-2"></i>Emri i Toponimit *
+                            </label>
+                            <input type="text" id="emriToponimit" required class="w-full px-4 py-3 border border-kufi rounded-lg focus:outline-none focus:ring-2 focus:ring-theks focus:border-transparent hije-hyrje" placeholder="P.sh. Mali i Gjallë">
+                            <p class="text-sm text-gray-500 mt-1">Emri i vendit si njihet në gjuhën shqipe</p>
+                        </div>
+
+                        <div>
+                            <label for="kuptimiToponimit" class="block text-gray-700 font-medium mb-2">
+                                <i class="fas fa-book-open mr-2"></i>Kuptimi ose Përshkrimi *
+                            </label>
+                            <textarea id="kuptimiToponimit" required rows="4" class="w-full px-4 py-3 border border-kufi rounded-lg focus:outline-none focus:ring-2 focus:ring-theks focus:border-transparent hije-hyrje" placeholder="Përshkrimi i kuptimit të toponimit..."></textarea>
+                            <p class="text-sm text-gray-500 mt-1">Shpjego kuptimin ose historinë e këtij emri vendi</p>
+                        </div>
+
+                        <div>
+                            <label for="vendndodhja" class="block text-gray-700 font-medium mb-2">
+                                <i class="fas fa-map mr-2"></i>Vendndodhja e Përafërt
+                            </label>
+                            <input type="text" id="vendndodhja" class="w-full px-4 py-3 border border-kufi rounded-lg focus:outline-none focus:ring-2 focus:ring-theks focus:border-transparent hije-hyrje" placeholder="P.sh. afër lumit të Drinit">
+                        </div>
+
+                        <div class="flex items-center">
+                            <input type="checkbox" id="konfirmoSaktësinë" required class="h-5 w-5 text-theks rounded">
+                            <label for="konfirmoSaktësinë" class="ml-2 text-gray-700">
+                                Konfirmoj që informacioni i dhënë është i saktë sipas njohurive të mia
+                            </label>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit" class="bg-theks text-white px-6 py-3 rounded-lg hover:bg-green-700 kalim hije-butoni">
+                                <i class="fas fa-paper-plane mr-2"></i>Dërgo Këshillimin
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Seksioni i Përgjegjësit (i fshehur fillimisht) -->
+            <section id="seksioniPërgjegjësi" class="mb-12 hidden">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">
+                    <i class="fas fa-user-shield mr-2"></i>Paneli i Përgjegjësit
+                </h2>
+                <div class="bg-white rounded-lg p-6 hije-kutie">
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-inbox mr-2"></i>Këshillimet në Pritje (<span id="numëruesiNëPritje">0</span>)
+                        </h3>
+                        <div id="listaKëshillimeveNëPritje" class="space-y-4">
+                            <!-- Këshillimet në pritje do të shfahen këtu -->
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-check-circle mr-2"></i>Toponime të Miratuara
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Emri</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kuptimi</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendndodhja</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Veprime</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelaToponimeve" class="bg-white divide-y divide-gray-200">
+                                    <!-- Toponimet e miratuara do të shfahen këtu -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-kufi mt-12">
+        <div class="container mx-auto px-4 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h3 class="text-lg font-semibold text-kryesor mb-2">Toponimet e Kukësit</h3>
+                    <p class="text-gray-600 text-sm">Ruajtja dhe ndarja e trashëgimisë onomastike</p>
+                </div>
+                <div class="text-center md:text-right">
+                    <p class="text-gray-500 text-sm">
+                        <i class="fas fa-info-circle mr-1"></i>Të gjitha këshillimet i shqyrton një përgjegjës
+                    </p>
+                    <p class="text-gray-500 text-sm mt-1">
+                        &copy; <span id="vitiAktual"></span> - Të gjitha të drejtat e ruajtura
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal për Konfirmim -->
+    <div id="modalKonfirmimi" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4" id="titulliModalit"></h3>
+                <p class="text-gray-600 mb-6" id="mesazhiModalit"></p>
+                <div class="flex justify-end space-x-3">
+                    <button id="butoniAnulo" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 kalim">
+                        Anulo
+                    </button>
+                    <button id="butoniKonfirmo" class="px-4 py-2 bg-dytësor text-white rounded hover:bg-red-700 kalim">
+                        Konfirmo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Të dhënat fillestare - toponime të miratuara
+        let toponimeTëMiratuara = [
+            {
+                "id": 1,
+                "emri": "Mali i Gjallë",
+                "kuptimi": "Emër i dhënë për shkak të bimësisë së pasur dhe jetës së egër që gjendet aty.",
+                "vendndodhja": "Në lindje të qytetit",
+                "dataMiratimit": "2023-01-15",
+                "statusi": "miratuar"
+            },
+            {
+                "id": 2,
+                "emri": "Gurët e Kuq",
+                "kuptimi": "Shkëmbinj me ngjyrë të kuqe të hekurit për shkak të mineralit që përmbajnë.",
+                "vendndodhja": "Afër fshatit Shishtavec",
+                "dataMiratimit": "2023-02-20",
+                "statusi": "miratuar"
+            },
+            {
+                "id": 3,
+                "emri": "Ujëvara e Bardhë",
+                "kuptimi": "Ujëvarë me ujë të kulluar që duket e bardhë kur bie nga lartësia.",
+                "vendndodhja": "Në malin e Kukësit",
+                "dataMiratimit": "2023-03-10",
+                "statusi": "miratuar"
+            },
+            {
+                "id": 4,
+                "emri": "Fusha e Gjanicës",
+                "kuptimi": "Fushë pjellore ku rriten drithëra të ndryshme.",
+                "vendndodhja": "Jugperëndim i qytetit",
+                "dataMiratimit": "2023-04-05",
+                "statusi": "miratuar"
+            }
+        ];
+
+        // Të dhënat fillestare - këshillime në pritje
+        let këshillimeNëPritje = [
+            {
+                "id": 101,
+                "emri": "Kodra e Dëborës",
+                "kuptimi": "Kodër që mbetet e zbardhur më gjatë se të tjerat pas reshjeve të dëborës.",
+                "vendndodhja": "Afër fshatit Kalis",
+                "dataKëshillimit": "2023-10-01",
+                "statusi": "në pritje"
+            },
+            {
+                "id": 102,
+                "emri": "Lumi i Ftohtë",
+                "kuptimi": "Lum me ujë të ftohtë edhe në ditët më të nxehta të verës.",
+                "vendndodhja": "Në kufirin me Malin e Zi",
+                "dataKëshillimit": "2023-10-05",
+                "statusi": "në pritje"
+            }
+        ];
+
+        // Variabla për gjendjen e aplikacionit
+        let ështëPërgjegjës = false;
+        let veprimiNëPritje = null;
+        let tëDhënatVeprimit = null;
+
+        // Funksion për inicializim
+        function inicializoFaqen() {
+            // Vendos vitin aktual në fund të faqes
+            document.getElementById("vitiAktual").textContent = new Date().getFullYear();
+            
+            // Ngarko toponimet e miratuara në tabelë
+            ngarkoToponimetTëMiratuara();
+            
+            // Ngarko këshillimet në pritje
+            ngarkoKëshillimetNëPritje();
+            
+            // Shto event listeners
+            document.getElementById("butoniKërkimit").addEventListener("click", kryejKërkimin);
+            document.getElementById("hyrjaKërkimit").addEventListener("keyup", function(event) {
+                if (event.key === "Enter") {
+                    kryejKërkimin();
+                }
+            });
+            
+            document.getElementById("formaKëshillimit").addEventListener("submit", përpunoFormënKëshillimit);
+            
+            document.getElementById("ndërroModal").addEventListener("click", ndërroMënyrënPërgjegjësi);
+            
+            document.getElementById("butoniAnulo").addEventListener("click", fshehModal);
+            document.getElementById("butoniKonfirmo").addEventListener("click", konfirmoVeprimin);
+            
+            // Kërko menjëherë për të shfaqur të gjitha toponimet
+            kryejKërkimin();
+        }
+
+        // Funksioni për kërkim
+        function kryejKërkimin() {
+            const kërkim = document.getElementById("hyrjaKërkimit").value.toLowerCase().trim();
+            const tëGjithaToponimet = [...toponimeTëMiratuara];
+            let rezultatet = [];
+            
+            if (kërkim === "") {
+                rezultatet = tëGjithaToponimet;
+            } else {
+                rezultatet = tëGjithaToponimet.filter(toponim => {
+                    return toponim.emri.toLowerCase().includes(kërkim) || 
+                           toponim.kuptimi.toLowerCase().includes(kërkim) ||
+                           toponim.vendndodhja.toLowerCase().includes(kërkim);
+                });
+            }
+            
+            shfaqRezultatet(rezultatet);
+        }
+
+        // Funksioni për shfaqjen e rezultateve
+        function shfaqRezultatet(rezultatet) {
+            const kontejneri = document.getElementById("listaRezultateve");
+            const numëruesi = document.getElementById("numëruesiRezultateve");
+            
+            numëruesi.textContent = rezultatet.length;
+            
+            if (rezultatet.length === 0) {
+                kontejneri.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-search fa-2x mb-4"></i>
+                        <p class="text-lg font-medium mb-2">Nuk u gjet asnjë toponim</p>
+                        <p>Provoni me një kërkim tjetër ose këshilloni një toponim të ri</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = "";
+            rezultatet.forEach(toponim => {
+                html += `
+                    <div class="border border-kufi rounded-lg p-4 hover:bg-gray-50 kalim">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="text-lg font-semibold text-kryesor mb-2">
+                                    <i class="fas fa-map-marker-alt mr-2"></i>${toponim.emri}
+                                </h4>
+                                <p class="text-gray-700 mb-2">${toponim.kuptimi}</p>
+                                <div class="flex items-center text-sm text-gray-600">
+                                    <i class="fas fa-map-marker mr-1"></i>
+                                    <span>${toponim.vendndodhja}</span>
+                                </div>
+                            </div>
+                            <div class="bg-green-100 text-green-800 text-xs font-medium px-3 py-1 rounded-full">
+                                <i class="fas fa-check-circle mr-1"></i>Miratuar
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            kontejneri.innerHTML = html;
+        }
+
+        // Funksioni për përpunimin e formës së këshillimit
+        function përpunoFormënKëshillimit(event) {
+            event.preventDefault();
+            
+            const emri = document.getElementById("emriToponimit").value.trim();
+            const kuptimi = document.getElementById("kuptimiToponimit").value.trim();
+            const vendndodhja = document.getElementById("vendndodhja").value.trim();
+            
+            if (!emri || !kuptimi) {
+                shfaqNjoftim("Gabim", "Ju lutem plotësoni të gjitha fushat e detyrueshme.", "dytësor");
+                return;
+            }
+            
+            const këshillimIRi = {
+                id: këshillimeNëPritje.length > 0 ? Math.max(...këshillimeNëPritje.map(k => k.id)) + 1 : 201,
+                emri: emri,
+                kuptimi: kuptimi,
+                vendndodhja: vendndodhja || "Nuk është specifikuar",
+                dataKëshillimit: new Date().toISOString().split('T')[0],
+                statusi: "në pritje"
+            };
+            
+            këshillimeNëPritje.push(këshillimIRi);
+            
+            // Pastro formën
+            document.getElementById("formaKëshillimit").reset();
+            
+            // Përditëso listën e këshillimeve në pritje nëse përgjegjësi është aktiv
+            if (ështëPërgjegjës) {
+                ngarkoKëshillimetNëPritje();
+            }
+            
+            shfaqNjoftim("Sukses", "Këshillimi juaj u dërgua me sukses! Një përgjegjës do ta shqyrtojë atë.", "theks");
+        }
+
+        // Funksioni për ndërrimin e mënyrës së përgjegjësit
+        function ndërroMënyrënPërgjegjësi() {
+            if (!ështëPërgjegjës) {
+                // Kërko fjalëkalimin
+                const fjalëkalimi = prompt("Futni fjalëkalimin për të hyrë si përgjegjës:");
+                
+                if (fjalëkalimi === "admin123") { // Fjalëkalimi i thjeshtë për demonstrim
+                    ështëPërgjegjës = true;
+                    document.getElementById("ndërroModal").innerHTML = '<i class="fas fa-sign-out-alt mr-2"></i>Dil nga Mënyra Përgjegjësi';
+                    document.getElementById("ndërroModal").classList.remove("bg-theks");
+                    document.getElementById("ndërroModal").classList.add("bg-dytësor");
+                    document.getElementById("statusPërgjegjësi").innerHTML = '<i class="fas fa-user-shield mr-1"></i>Përgjegjës';
+                    document.getElementById("statusPërgjegjësi").classList.remove("hidden");
+                    document.getElementById("seksioniPërgjegjësi").classList.remove("hidden");
+                    
+                    // Ngarko të dhënat e përgjegjësit
+                    ngarkoKëshillimetNëPritje();
+                    ngarkoToponimetTëMiratuara();
+                    
+                    shfaqNjoftim("Mirëseardhje", "Tani jeni në mënyrën e përgjegjësit.", "theks");
+                } else {
+                    shfaqNjoftim("Gabim", "Fjalëkalimi i gabuar.", "dytësor");
+                }
+            } else {
+                ështëPërgjegjës = false;
+                document.getElementById("ndërroModal").innerHTML = '<i class="fas fa-user-shield mr-2"></i>Mënyra Përgjegjësi';
+                document.getElementById("ndërroModal").classList.remove("bg-dytësor");
+                document.getElementById("ndërroModal").classList.add("bg-theks");
+                document.getElementById("statusPërgjegjësi").innerHTML = '<i class="fas fa-user mr-1"></i>Vizitor';
+                document.getElementById("seksioniPërgjegjësi").classList.add("hidden");
+                
+                shfaqNjoftim("Dalje", "Keni dalë nga mënyra e përgjegjësit.", "kryesor");
+            }
+        }
+
+        // Funksioni për ngarkimin e këshillimeve në pritje
+        function ngarkoKëshillimetNëPritje() {
+            const kontejneri = document.getElementById("listaKëshillimeveNëPritje");
+            const numëruesi = document.getElementById("numëruesiNëPritje");
+            
+            numëruesi.textContent = këshillimeNëPritje.length;
+            
+            if (këshillimeNëPritje.length === 0) {
+                kontejneri.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-inbox fa-2x mb-4"></i>
+                        <p class="text-lg font-medium mb-2">Nuk ka këshillime në pritje</p>
+                        <p>Të gjitha këshillimet janë shqyrtuar</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = "";
+            këshillimeNëPritje.forEach(këshillim => {
+                html += `
+                    <div class="border border-kufi rounded-lg p-4 bg-gray-50">
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="text-lg font-semibold text-gray-800">${këshillim.emri}</h4>
+                            <div class="bg-yellow-100 text-yellow-800 text-xs font-medium px-3 py-1 rounded-full">
+                                <i class="fas fa-clock mr-1"></i>Në Pritje
+                            </div>
+                        </div>
+                        <p class="text-gray-700 mb-3">${këshillim.kuptimi}</p>
+                        <div class="flex justify-between items-center">
+                            <div class="text-sm text-gray-600">
+                                <i class="fas fa-map-marker-alt mr-1"></i>${këshillim.vendndodhja}
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="miratoKëshillimin(${këshillim.id})" class="bg-theks text-white px-3 py-1 rounded text-sm hover:bg-green-700 kalim">
+                                    <i class="fas fa-check mr-1"></i>Mirato
+                                </button>
+                                <button onclick="fshiKëshillimin(${këshillim.id})" class="bg-dytësor text-white px-3 py-1 rounded text-sm hover:bg-red-700 kalim">
+                                    <i class="fas fa-times mr-1"></i>Refuzo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            kontejneri.innerHTML = html;
+        }
+
+        // Funksioni për ngarkimin e toponimeve të miratuara në tabelë
+        function ngarkoToponimetTëMiratuara() {
+            const trupTabelës = document.getElementById("tabelaToponimeve");
+            
+            if (toponimeTëMiratuara.length === 0) {
+                trupTabelës.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                            <i class="fas fa-info-circle mr-2"></i>Nuk ka toponime të miratuara akoma
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = "";
+            toponimeTëMiratuara.forEach(toponim => {
+                html += `
+                    <tr>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${toponim.emri}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${toponim.kuptimi}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${toponim.vendndodhja}</td>
+                        <td class="px-4 py-3 text-sm font-medium">
+                            <button onclick="fshiToponim(${toponim.id})" class="text-dytësor hover:text-red-700 kalim">
+                                <i class="fas fa-trash mr-1"></i>Fshi
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            trupTabelës.innerHTML = html;
+        }
+
+        // Funksioni për miratimin e një këshillimi
+        function miratoKëshillimin(id) {
+            const këshillim = këshillimeNëPritje.find(k => k.id === id);
+            if (!këshillim) return;
+            
+            veprimiNëPritje = "mirato";
+            tëDhënatVeprimit = { id, këshillim };
+            
+            document.getElementById("titulliModalit").textContent = "Mirato Këshillimin";
+            document.getElementById("mesazhiModalit").textContent = `A jeni i sigurt që dëshironi të miratoni toponimin "${këshillim.emri}"?`;
+            document.getElementById("modalKonfirmimi").classList.remove("hidden");
+        }
+
+        // Funksioni për fshirjen e një këshillimi
+        function fshiKëshillimin(id) {
+            const këshillim = këshillimeNëPritje.find(k => k.id === id);
+            if (!këshillim) return;
+            
+            veprimiNëPritje = "fshiKëshillim";
+            tëDhënatVeprimit = { id };
+            
+            document.getElementById("titulliModalit").textContent = "Refuzo Këshillimin";
+            document.getElementById("mesazhiModalit").textContent = `A jeni i sigurt që dëshironi të refuzoni këshillimin për toponimin "${këshillim.emri}"?`;
+            document.getElementById("modalKonfirmimi").classList.remove("hidden");
+        }
+
+        // Funksioni për fshirjen e një toponimi të miratuar
+        function fshiToponim(id) {
+            const toponim = toponimeTëMiratuara.find(t => t.id === id);
+            if (!toponim) return;
+            
+            veprimiNëPritje = "fshiToponim";
+            tëDhënatVeprimit = { id };
+            
+            document.getElementById("titulliModalit").textContent = "Fshi Toponim";
+            document.getElementById("mesazhiModalit").textContent = `A jeni i sigurt që dëshironi të fshini toponimin "${toponim.emri}"?`;
+            document.getElementById("modalKonfirmimi").classList.remove("hidden");
+        }
+
+        // Funksioni për fshehjen e modalit
+        function fshehModal() {
+            document.getElementById("modalKonfirmimi").classList.add("hidden");
+            veprimiNëPritje = null;
+            tëDhënatVeprimit = null;
+        }
+
+        // Funksioni për konfirmimin e veprimit
+        function konfirmoVeprimin() {
+            if (!veprimiNëPritje || !tëDhënatVeprimit) return;
+            
+            if (veprimiNëPritje === "mirato") {
+                const { id, këshillim } = tëDhënatVeprimit;
+                
+                // Shto në listën e toponimeve të miratuara
+                const toponimIRi = {
+                    id: toponimeTëMiratuara.length > 0 ? Math.max(...toponimeTëMiratuara.map(t => t.id)) + 1 : 5,
+                    emri: këshillim.emri,
+                    kuptimi: këshillim.kuptimi,
+                    vendndodhja: këshillim.vendndodhja,
+                    dataMiratimit: new Date().toISOString().split('T')[0],
+                    statusi: "miratuar"
+                };
+                
+                toponimeTëMiratuara.push(toponimIRi);
+                
+                // Hiq nga listat e këshillimeve në pritje
+                këshillimeNëPritje = këshillimeNëPritje.filter(k => k.id !== id);
+                
+                // Përditëso të dyja listat
+                ngarkoKëshillimetNëPritje();
+                ngarkoToponimetTëMiratuara();
+                
+                // Përditëso rezultatet e kërkimit
+                kryejKërkimin();
+                
+                shfaqNjoftim("Sukses", `Toponimi "${këshillim.emri}" u miratua me sukses.`, "theks");
+            }
+            else if (veprimiNëPritje === "fshiKëshillim") {
+                const { id } = tëDhënatVeprimit;
+                const këshillim = këshillimeNëPritje.find(k => k.id === id);
+                
+                // Hiq nga listat e këshillimeve në pritje
+                këshillimeNëPritje = këshillimeNëPritje.filter(k => k.id !== id);
+                
+                // Përditëso listën
+                ngarkoKëshillimetNëPritje();
+                
+                shfaqNjoftim("Sukses", `Këshillimi për toponimin "${këshillim.emri}" u refuzua.`, "kryesor");
+            }
+            else if (veprimiNëPritje === "fshiToponim") {
+                const { id } = tëDhënatVeprimit;
+                const toponim = toponimeTëMiratuara.find(t => t.id === id);
+                
+                // Hiq nga listat e toponimeve të miratuara
+                toponimeTëMiratuara = toponimeTëMiratuara.filter(t => t.id !== id);
+                
+                // Përditëso listën
+                ngarkoToponimetTëMiratuara();
+                
+                // Përditëso rezultatet e kërkimit
+                kryejKërkimin();
+                
+                shfaqNjoftim("Sukses", `Toponimi "${toponim.emri}" u fshi me sukses.`, "kryesor");
+            }
+            
+            fshehModal();
+        }
+
+        // Funksioni për shfaqjen e njoftimeve
+        function shfaqNjoftim(titulli, mesazhi, lloji) {
+            // Krijoni një element njoftimi
+            const njoftim = document.createElement("div");
+            njoftim.className = `fixed top-4 right-4 z-50 rounded-lg p-4 text-white shadow-lg kalim`;
+            
+            let ngjyra = "bg-kryesor";
+            if (lloji === "theks") ngjyra = "bg-theks";
+            if (lloji === "dytësor") ngjyra = "bg-dytësor";
+            
+            njoftim.className += ` ${ngjyra}`;
+            
+            njoftim.innerHTML = `
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-${lloji === "dytësor" ? "exclamation-triangle" : "check-circle"} text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="font-semibold">${titulli}</h4>
+                        <p class="text-sm opacity-90">${mesazhi}</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-auto text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(njoftim);
+            
+            // Hiqe njoftimin pas 5 sekondave
+            setTimeout(() => {
+                if (njoftim.parentElement) {
+                    njoftim.remove();
+                }
+            }, 5000);
+        }
+
+        // Inicializo faqen kur të jetë gati
+        document.addEventListener("DOMContentLoaded", inicializoFaqen);
+    </script>
 </body>
 </html>
