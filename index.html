@@ -135,6 +135,17 @@
                             </button>
                         </div>
                     </form>
+                    
+                    <!-- Mesazhi informues për përdoruesit -->
+                    <div id="infoKëshillimi" class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg hidden">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-blue-600 text-xl mr-3 mt-1"></i>
+                            <div>
+                                <h4 class="font-semibold text-blue-900 mb-1">Këshillimi juaj u ruajt!</h4>
+                                <p class="text-sm text-blue-800" id="mesazhiInfo"></p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -192,6 +203,9 @@
                     <p class="text-gray-500 text-sm mt-1">
                         &copy; <span id="vitiAktual"></span> - Të gjitha të drejtat e ruajtura
                     </p>
+                    <button onclick="window.debugTools.showData()" class="text-xs text-gray-400 hover:text-gray-600 mt-2">
+                        <i class="fas fa-database mr-1"></i>Shfaq të dhënat (për testim)
+                    </button>
                 </div>
             </div>
         </div>
@@ -546,14 +560,26 @@
                 // Pastro formën
                 document.getElementById("formaKëshillimit").reset();
                 
-                // Përditëso listën e këshillimeve nëse përgjegjësi është aktiv
-                if (ështëPërgjegjës) {
-                    ngarkoKëshillimetNëPritje();
-                }
+                // GJITHMONË përditëso listën e këshillimeve (edhe nëse përgjegjësi nuk është aktiv)
+                ngarkoKëshillimetNëPritje();
+                
+                // Trego një njoftim më të detajuar
+                const numërKëshillimesh = MenaxhuesiTëDhënave.merrKëshillime().length;
+                
+                // Trego info box për përdoruesin
+                const infoBox = document.getElementById("infoKëshillimi");
+                const mesazhiInfo = document.getElementById("mesazhiInfo");
+                mesazhiInfo.textContent = `Këshillimi për "${emri}" është ruajtur dhe pret shqyrtim nga përgjegjësi. Gjithsej ka ${numërKëshillimesh} këshillime në pritje.`;
+                infoBox.classList.remove("hidden");
+                
+                // Fsheh info box pas 10 sekondash
+                setTimeout(() => {
+                    infoBox.classList.add("hidden");
+                }, 10000);
                 
                 shfaqNjoftim(
                     "Sukses", 
-                    `Këshillimi juaj për "${emri}" u dërgua me sukses! Një përgjegjës do ta shqyrtojë atë.`, 
+                    `Këshillimi juaj për "${emri}" u ruajt me sukses!`, 
                     "theks"
                 );
             } else {
@@ -842,7 +868,7 @@
 
         document.addEventListener("DOMContentLoaded", inicializoFaqen);
 
-        // Për testim në console (opsionale - mund të fshihet)
+        // Për testim dhe verifikim
         window.debugTools = {
             resetData: () => {
                 if (confirm("A jeni i sigurt që dëshironi të fshini të gjitha të dhënat dhe të resetoni në gjendjen fillestare?")) {
@@ -851,8 +877,22 @@
                 }
             },
             showData: () => {
-                console.log("Toponime:", MenaxhuesiTëDhënave.merrToponime());
-                console.log("Këshillime:", MenaxhuesiTëDhënave.merrKëshillime());
+                const toponime = MenaxhuesiTëDhënave.merrToponime();
+                const keshillime = MenaxhuesiTëDhënave.merrKëshillime();
+                
+                let mesazhi = `=== TË DHËNAT NË LOCALSTORAGE ===\n\n`;
+                mesazhi += `📍 TOPONIME TË MIRATUARA: ${toponime.length}\n`;
+                toponime.forEach(t => {
+                    mesazhi += `  • ${t.emri}\n`;
+                });
+                mesazhi += `\n⏳ KËSHILLIME NË PRITJE: ${keshillime.length}\n`;
+                keshillime.forEach(k => {
+                    mesazhi += `  • ${k.emri} (ID: ${k.id})\n`;
+                });
+                
+                alert(mesazhi);
+                console.log("Toponime:", toponime);
+                console.log("Këshillime:", keshillime);
             }
         };
     </script>
