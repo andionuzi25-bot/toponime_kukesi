@@ -1,23 +1,41 @@
 <!DOCTYPE html>
 <html lang="sq">
 <head>
+    <base target="_self">
     <meta charset="UTF-8">
-    <title>Toponimet e Kukësit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toponimet e Kukësit</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        blu_kukës: "#1e40af",
+                        gjelbër_kukës: "#059669",
+                        errët: "#1f2937"
+                    }
+                }
+            }
+        }
+    </script>
 </head>
 
-<body class="bg-gradient-to-br from-blue-50 to-emerald-50 min-h-screen">
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-emerald-50">
 
-<!-- HEADER -->
-<header class="sticky top-0 bg-white shadow z-50">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-blue-800">
-            <i class="fas fa-mountain mr-2"></i>Toponimet Kukës
+<!-- ================= HEADER ================= -->
+<header class="sticky top-0 z-50 bg-white shadow">
+    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold text-errët">
+            <i class="fas fa-mountain text-blu_kukës mr-2"></i>
+            Toponimet<span class="text-blu_kukës">Kukës</span>
         </h1>
+
         <div class="space-x-2">
-            <button onclick="openWordForm()" class="bg-blue-700 text-white px-4 py-2 rounded">
+            <button onclick="openWordForm()" class="bg-blu_kukës text-white px-4 py-2 rounded">
                 + Shto Toponim
             </button>
             <button onclick="openAdminPanel()" class="bg-black text-white px-4 py-2 rounded">
@@ -27,70 +45,71 @@
     </div>
 </header>
 
-<!-- SEARCH -->
-<div class="max-w-4xl mx-auto p-6">
-    <input id="searchInput" placeholder="Kërko toponim..."
-        class="w-full p-4 border rounded shadow"
-        onkeyup="if(event.key==='Enter') performSearch()">
-</div>
+<!-- ================= RESULTS ================= -->
+<main class="container mx-auto px-4 py-10">
+    <div id="resultsContainer" class="grid md:grid-cols-3 gap-6"></div>
+</main>
 
-<!-- RESULTS -->
-<div class="max-w-7xl mx-auto px-6 grid md:grid-cols-3 gap-6" id="resultsContainer"></div>
-
-<!-- ADD TOPONYM MODAL -->
+<!-- ================= ADD MODAL ================= -->
 <div id="addWordModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center">
     <div class="bg-white p-6 rounded w-96 space-y-3">
         <h2 class="text-xl font-bold">Shto Toponim</h2>
+
         <input id="newWordName" placeholder="Emri" class="w-full border p-2">
         <textarea id="newWordMeaning" placeholder="Kuptimi" class="w-full border p-2"></textarea>
+
         <select id="newWordType" class="w-full border p-2">
             <option value="">Lloji</option>
             <option value="lum">Lum</option>
             <option value="mal">Mal</option>
             <option value="fshat">Fshat</option>
         </select>
+
         <input id="newWordLocation" placeholder="Vendndodhja" class="w-full border p-2">
         <input id="newWordEmail" placeholder="Email" class="w-full border p-2">
+
         <div class="flex justify-between">
             <button onclick="closeWordForm()">Anulo</button>
-            <button onclick="submitNewWord()" class="bg-blue-700 text-white px-4 py-1 rounded">
+            <button onclick="submitNewWord()" class="bg-blu_kukës text-white px-4 py-1 rounded">
                 Dërgo
             </button>
         </div>
     </div>
 </div>
 
-<!-- ADMIN PANEL -->
+<!-- ================= ADMIN PANEL ================= -->
 <div id="adminPanel" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center">
     <div class="bg-white p-6 rounded w-[600px] max-h-[90vh] overflow-y-auto">
-        <h2 class="text-xl font-bold mb-4">Paneli i Administratorit</h2>
 
         <div id="adminLogin">
+            <h2 class="text-xl font-bold mb-4">Paneli i Administratorit</h2>
             <input id="adminPassword" type="password" placeholder="Fjalëkalimi"
-                class="w-full border p-2 mb-3">
-            <button onclick="loginAdmin()"
-                class="w-full bg-blue-700 text-white py-2 rounded">
+                   class="w-full border p-2 mb-3">
+            <button onclick="loginAdmin()" class="w-full bg-blu_kukës text-white py-2 rounded">
                 Hyr
             </button>
         </div>
 
         <div id="adminContent" class="hidden">
-            <h3 class="font-bold mb-3">Toponime në pritje</h3>
+            <h3 class="font-bold mb-4">Toponime në pritje</h3>
             <div id="pendingWordsContainer" class="space-y-3"></div>
         </div>
+
     </div>
 </div>
 
 <script>
+/* ================= GLOBAL ================= */
 const ADMIN_PASSWORD = "admin123";
 let toponymsData = [];
 let pendingToponyms = [];
 
-/* ================= LOAD & SAVE ================= */
+/* ================= STORAGE ================= */
 function loadData() {
     toponymsData = JSON.parse(localStorage.getItem("toponymsData")) || [];
     pendingToponyms = JSON.parse(localStorage.getItem("pendingToponyms")) || [];
 }
+
 function saveData() {
     localStorage.setItem("toponymsData", JSON.stringify(toponymsData));
     localStorage.setItem("pendingToponyms", JSON.stringify(pendingToponyms));
@@ -106,30 +125,13 @@ document.addEventListener("DOMContentLoaded", () => {
 function displayAllToponyms() {
     const c = document.getElementById("resultsContainer");
     c.innerHTML = "";
+
     toponymsData.forEach(t => {
         c.innerHTML += `
         <div class="bg-white p-5 rounded shadow">
             <h3 class="font-bold text-lg">${t.name}</h3>
             <p class="text-gray-600">${t.meaning}</p>
             <small>${t.location}</small>
-        </div>`;
-    });
-}
-
-/* ================= SEARCH ================= */
-function performSearch() {
-    const term = searchInput.value.toLowerCase();
-    const filtered = toponymsData.filter(t =>
-        t.name.toLowerCase().includes(term) ||
-        t.meaning.toLowerCase().includes(term)
-    );
-    const c = document.getElementById("resultsContainer");
-    c.innerHTML = "";
-    filtered.forEach(t => {
-        c.innerHTML += `
-        <div class="bg-white p-5 rounded shadow">
-            <h3 class="font-bold text-lg">${t.name}</h3>
-            <p>${t.meaning}</p>
         </div>`;
     });
 }
@@ -142,7 +144,7 @@ function closeWordForm() {
     addWordModal.classList.add("hidden");
 }
 function submitNewWord() {
-    const t = {
+    const newToponym = {
         id: Date.now(),
         name: newWordName.value,
         meaning: newWordMeaning.value,
@@ -150,34 +152,42 @@ function submitNewWord() {
         location: newWordLocation.value,
         email: newWordEmail.value
     };
-    pendingToponyms.push(t);
+
+    pendingToponyms.push(newToponym);
     saveData();
+
     closeWordForm();
     alert("Toponimi u dërgua për aprovim!");
 }
 
 /* ================= ADMIN ================= */
 function openAdminPanel() {
-    loadData(); // ✅ FIX KRITIK
     adminPanel.classList.remove("hidden");
 }
+
 function loginAdmin() {
     if (adminPassword.value !== ADMIN_PASSWORD) {
         alert("Fjalëkalim i gabuar");
         return;
     }
+
+    loadData(); // ✅ FIX I SAKTË DHE FINAL
+
     adminLogin.classList.add("hidden");
     adminContent.classList.remove("hidden");
-    displayPending();
+    displayPendingWords();
 }
-function displayPending() {
+
+function displayPendingWords() {
     const c = document.getElementById("pendingWordsContainer");
     c.innerHTML = "";
+
     if (pendingToponyms.length === 0) {
         c.innerHTML = "<p>Nuk ka sugjerime</p>";
         return;
     }
-    pendingToponyms.forEach((t,i) => {
+
+    pendingToponyms.forEach((t, i) => {
         c.innerHTML += `
         <div class="border p-4 rounded">
             <b>${t.name}</b>
@@ -193,17 +203,19 @@ function displayPending() {
         </div>`;
     });
 }
+
 function approve(i) {
     toponymsData.push(pendingToponyms[i]);
-    pendingToponyms.splice(i,1);
+    pendingToponyms.splice(i, 1);
     saveData();
-    displayPending();
+    displayPendingWords();
     displayAllToponyms();
 }
+
 function reject(i) {
-    pendingToponyms.splice(i,1);
+    pendingToponyms.splice(i, 1);
     saveData();
-    displayPending();
+    displayPendingWords();
 }
 </script>
 
