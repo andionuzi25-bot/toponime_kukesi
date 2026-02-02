@@ -37,7 +37,7 @@
     </style>
 </head>
 <body class="min-h-screen bg-sfond text-gray-800">
-    <header class="bg-white shije-kutie">
+    <header class="bg-white hije-kutie">
         <nav class="container mx-auto px-4 py-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="mb-4 md:mb-0">
@@ -83,7 +83,7 @@
                         <i class="fas fa-list mr-2"></i>Rezultatet e Kërkimit (<span id="numëruesiRezultateve">0</span>)
                     </h3>
                     <div id="listaRezultateve" class="space-y-4">
-                        <!-- Rezultatet do të shfahen këtu -->
+                        <!-- Rezultatet do të shfaqen këtu -->
                         <div class="text-center py-8 text-gray-500">
                             <i class="fas fa-search fa-2x mb-4"></i>
                             <p>Shkruaj në kërkim për të parë toponimet</p>
@@ -149,7 +149,7 @@
                             <i class="fas fa-inbox mr-2"></i>Këshillimet në Pritje (<span id="numëruesiNëPritje">0</span>)
                         </h3>
                         <div id="listaKëshillimeveNëPritje" class="space-y-4">
-                            <!-- Këshillimet në pritje do të shfahen këtu -->
+                            <!-- Këshillimet në pritje do të shfaqen këtu -->
                         </div>
                     </div>
 
@@ -168,7 +168,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tabelaToponimeve" class="bg-white divide-y divide-gray-200">
-                                    <!-- Toponimet e miratuara do të shfahen këtu -->
+                                    <!-- Toponimet e miratuara do të shfaqen këtu -->
                                 </tbody>
                             </table>
                         </div>
@@ -216,76 +216,222 @@
     </div>
 
     <script>
-        // Të dhënat fillestare - toponime të miratuara
-        let toponimeTëMiratuara = [
-            {
-                "id": 1,
-                "emri": "Mali i Gjallë",
-                "kuptimi": "Emër i dhënë për shkak të bimësisë së pasur dhe jetës së egër që gjendet aty.",
-                "vendndodhja": "Në lindje të qytetit",
-                "dataMiratimit": "2023-01-15",
-                "statusi": "miratuar"
-            },
-            {
-                "id": 2,
-                "emri": "Gurët e Kuq",
-                "kuptimi": "Shkëmbinj me ngjyrë të kuqe të hekurit për shkak të mineralit që përmbajnë.",
-                "vendndodhja": "Afër fshatit Shishtavec",
-                "dataMiratimit": "2023-02-20",
-                "statusi": "miratuar"
-            },
-            {
-                "id": 3,
-                "emri": "Ujëvara e Bardhë",
-                "kuptimi": "Ujëvarë me ujë të kulluar që duket e bardhë kur bie nga lartësia.",
-                "vendndodhja": "Në malin e Kukësit",
-                "dataMiratimit": "2023-03-10",
-                "statusi": "miratuar"
-            },
-            {
-                "id": 4,
-                "emri": "Fusha e Gjanicës",
-                "kuptimi": "Fushë pjellore ku rriten drithëra të ndryshme.",
-                "vendndodhja": "Jugperëndim i qytetit",
-                "dataMiratimit": "2023-04-05",
-                "statusi": "miratuar"
-            }
-        ];
+        // ============================================
+        // MENAXHIMI I TË DHËNAVE ME LOCALSTORAGE
+        // ============================================
 
-        // Të dhënat fillestare - këshillime në pritje
-        let këshillimeNëPritje = [
-            {
-                "id": 101,
-                "emri": "Kodra e Dëborës",
-                "kuptimi": "Kodër që mbetet e zbardhur më gjatë se të tjerat pas reshjeve të dëborës.",
-                "vendndodhja": "Afër fshatit Kalis",
-                "dataKëshillimit": "2023-10-01",
-                "statusi": "në pritje"
-            },
-            {
-                "id": 102,
-                "emri": "Lumi i Ftohtë",
-                "kuptimi": "Lum me ujë të ftohtë edhe në ditët më të nxehta të verës.",
-                "vendndodhja": "Në kufirin me Malin e Zi",
-                "dataKëshillimit": "2023-10-05",
-                "statusi": "në pritje"
-            }
-        ];
+        // Çelësat për localStorage
+        const STORAGE_KEYS = {
+            TOPONIME: 'toponimet_te_miratuara',
+            KESHILLIME: 'keshillime_ne_pritje',
+            NEXT_TOPONIM_ID: 'next_toponim_id',
+            NEXT_KESHILLIM_ID: 'next_keshillim_id'
+        };
 
-        // Variabla për gjendjen e aplikacionit
+        // Të dhënat fillestare (përdoren vetëm nëse localStorage është bosh)
+        const TË_DHËNAT_FILLESTARE = {
+            toponime: [
+                {
+                    "id": 1,
+                    "emri": "Mali i Gjallë",
+                    "kuptimi": "Emër i dhënë për shkak të bimësisë së pasur dhe jetës së egër që gjendet aty.",
+                    "vendndodhja": "Në lindje të qytetit",
+                    "dataMiratimit": "2023-01-15",
+                    "statusi": "miratuar"
+                },
+                {
+                    "id": 2,
+                    "emri": "Gurët e Kuq",
+                    "kuptimi": "Shkëmbinj me ngjyrë të kuqe të hekurit për shkak të mineralit që përmbajnë.",
+                    "vendndodhja": "Afër fshatit Shishtavec",
+                    "dataMiratimit": "2023-02-20",
+                    "statusi": "miratuar"
+                },
+                {
+                    "id": 3,
+                    "emri": "Ujëvara e Bardhë",
+                    "kuptimi": "Ujëvarë me ujë të kulluar që duket e bardhë kur bie nga lartësia.",
+                    "vendndodhja": "Në malin e Kukësit",
+                    "dataMiratimit": "2023-03-10",
+                    "statusi": "miratuar"
+                },
+                {
+                    "id": 4,
+                    "emri": "Fusha e Gjanicës",
+                    "kuptimi": "Fushë pjellore ku rriten drithëra të ndryshme.",
+                    "vendndodhja": "Jugperëndim i qytetit",
+                    "dataMiratimit": "2023-04-05",
+                    "statusi": "miratuar"
+                }
+            ],
+            keshillime: [
+                {
+                    "id": 101,
+                    "emri": "Kodra e Dëborës",
+                    "kuptimi": "Kodër që mbetet e zbardhur më gjatë se të tjerat pas reshjeve të dëborës.",
+                    "vendndodhja": "Afër fshatit Kalis",
+                    "dataKëshillimit": "2023-10-01",
+                    "statusi": "në pritje"
+                },
+                {
+                    "id": 102,
+                    "emri": "Lumi i Ftohtë",
+                    "kuptimi": "Lum me ujë të ftohtë edhe në ditët më të nxehta të verës.",
+                    "vendndodhja": "Në kufirin me Malin e Zi",
+                    "dataKëshillimit": "2023-10-05",
+                    "statusi": "në pritje"
+                }
+            ]
+        };
+
+        // Funksionet për localStorage
+        class MenaxhuesiTëDhënave {
+            // Merr toponimet e miratuara
+            static merrToponime() {
+                try {
+                    const data = localStorage.getItem(STORAGE_KEYS.TOPONIME);
+                    if (data) {
+                        return JSON.parse(data);
+                    }
+                } catch (error) {
+                    console.error('Gabim në leximin e toponimeve:', error);
+                }
+                // Nëse nuk ka të dhëna, vendos të dhënat fillestare
+                this.vendosToponime(TË_DHËNAT_FILLESTARE.toponime);
+                return TË_DHËNAT_FILLESTARE.toponime;
+            }
+
+            // Ruaj toponimet e miratuara
+            static vendosToponime(toponime) {
+                try {
+                    localStorage.setItem(STORAGE_KEYS.TOPONIME, JSON.stringify(toponime));
+                    return true;
+                } catch (error) {
+                    console.error('Gabim në ruajtjen e toponimeve:', error);
+                    return false;
+                }
+            }
+
+            // Merr këshillimet në pritje
+            static merrKëshillime() {
+                try {
+                    const data = localStorage.getItem(STORAGE_KEYS.KESHILLIME);
+                    if (data) {
+                        return JSON.parse(data);
+                    }
+                } catch (error) {
+                    console.error('Gabim në leximin e këshillimeve:', error);
+                }
+                // Nëse nuk ka të dhëna, vendos të dhënat fillestare
+                this.vendosKëshillime(TË_DHËNAT_FILLESTARE.keshillime);
+                return TË_DHËNAT_FILLESTARE.keshillime;
+            }
+
+            // Ruaj këshillimet në pritje
+            static vendosKëshillime(keshillime) {
+                try {
+                    localStorage.setItem(STORAGE_KEYS.KESHILLIME, JSON.stringify(keshillime));
+                    return true;
+                } catch (error) {
+                    console.error('Gabim në ruajtjen e këshillimeve:', error);
+                    return false;
+                }
+            }
+
+            // Merr ID-në e radhës për toponim
+            static merrIDRadhësToponim() {
+                const currentId = parseInt(localStorage.getItem(STORAGE_KEYS.NEXT_TOPONIM_ID) || '5');
+                localStorage.setItem(STORAGE_KEYS.NEXT_TOPONIM_ID, (currentId + 1).toString());
+                return currentId;
+            }
+
+            // Merr ID-në e radhës për këshillim
+            static merrIDRadhësKëshillim() {
+                const currentId = parseInt(localStorage.getItem(STORAGE_KEYS.NEXT_KESHILLIM_ID) || '103');
+                localStorage.setItem(STORAGE_KEYS.NEXT_KESHILLIM_ID, (currentId + 1).toString());
+                return currentId;
+            }
+
+            // Shto toponim të ri
+            static shtoToponim(toponim) {
+                const toponime = this.merrToponime();
+                toponime.push(toponim);
+                return this.vendosToponime(toponime);
+            }
+
+            // Shto këshillim të ri
+            static shtoKëshillim(keshillim) {
+                const keshillime = this.merrKëshillime();
+                keshillime.push(keshillim);
+                return this.vendosKëshillime(keshillime);
+            }
+
+            // Fshi toponim
+            static fshiToponim(id) {
+                const toponime = this.merrToponime();
+                const të_filtruara = toponime.filter(t => t.id !== id);
+                return this.vendosToponime(të_filtruara);
+            }
+
+            // Fshi këshillim
+            static fshiKëshillim(id) {
+                const keshillime = this.merrKëshillime();
+                const të_filtruara = keshillime.filter(k => k.id !== id);
+                return this.vendosKëshillime(të_filtruara);
+            }
+
+            // Mirato këshillim (hiqe nga pritja dhe shtoje në toponime)
+            static miratoKëshillim(id) {
+                const keshillime = this.merrKëshillime();
+                const keshillim = keshillime.find(k => k.id === id);
+                
+                if (!keshillim) return false;
+
+                // Krijo toponimin e ri
+                const toponimIRi = {
+                    id: this.merrIDRadhësToponim(),
+                    emri: keshillim.emri,
+                    kuptimi: keshillim.kuptimi,
+                    vendndodhja: keshillim.vendndodhja,
+                    dataMiratimit: new Date().toISOString().split('T')[0],
+                    statusi: "miratuar"
+                };
+
+                // Shto në toponime
+                if (!this.shtoToponim(toponimIRi)) return false;
+
+                // Hiqe nga këshillimet
+                return this.fshiKëshillim(id);
+            }
+
+            // Reseto të dhënat (vetëm për testim)
+            static resetoTëDhënat() {
+                this.vendosToponime(TË_DHËNAT_FILLESTARE.toponime);
+                this.vendosKëshillime(TË_DHËNAT_FILLESTARE.keshillime);
+                localStorage.setItem(STORAGE_KEYS.NEXT_TOPONIM_ID, '5');
+                localStorage.setItem(STORAGE_KEYS.NEXT_KESHILLIM_ID, '103');
+            }
+        }
+
+        // ============================================
+        // GJENDJA E APLIKACIONIT
+        // ============================================
+
         let ështëPërgjegjës = false;
         let veprimiNëPritje = null;
         let tëDhënatVeprimit = null;
 
-        // Funksion për inicializim
+        // ============================================
+        // FUNKSIONET KRYESORE
+        // ============================================
+
+        // Inicializimi i faqes
         function inicializoFaqen() {
-            // Vendos vitin aktual në fund të faqes
+            // Vendos vitin aktual
             document.getElementById("vitiAktual").textContent = new Date().getFullYear();
             
-            // Ngarko toponimet e miratuara në tabelë
+            // Ngarko të dhënat nga localStorage
             ngarkoToponimetTëMiratuara();
-            
-            // Ngarko këshillimet në pritje
             ngarkoKëshillimetNëPritje();
             
             // Shto event listeners
@@ -297,9 +443,7 @@
             });
             
             document.getElementById("formaKëshillimit").addEventListener("submit", përpunoFormënKëshillimit);
-            
             document.getElementById("ndërroModal").addEventListener("click", ndërroMënyrënPërgjegjësi);
-            
             document.getElementById("butoniAnulo").addEventListener("click", fshehModal);
             document.getElementById("butoniKonfirmo").addEventListener("click", konfirmoVeprimin);
             
@@ -307,10 +451,13 @@
             kryejKërkimin();
         }
 
-        // Funksioni për kërkim
+        // ============================================
+        // FUNKSIONET E KËRKIMIT
+        // ============================================
+
         function kryejKërkimin() {
             const kërkim = document.getElementById("hyrjaKërkimit").value.toLowerCase().trim();
-            const tëGjithaToponimet = [...toponimeTëMiratuara];
+            const tëGjithaToponimet = MenaxhuesiTëDhënave.merrToponime();
             let rezultatet = [];
             
             if (kërkim === "") {
@@ -326,7 +473,6 @@
             shfaqRezultatet(rezultatet);
         }
 
-        // Funksioni për shfaqjen e rezultateve
         function shfaqRezultatet(rezultatet) {
             const kontejneri = document.getElementById("listaRezultateve");
             const numëruesi = document.getElementById("numëruesiRezultateve");
@@ -349,17 +495,17 @@
                 html += `
                     <div class="border border-kufi rounded-lg p-4 hover:bg-gray-50 kalim">
                         <div class="flex justify-between items-start">
-                            <div>
+                            <div class="flex-grow">
                                 <h4 class="text-lg font-semibold text-kryesor mb-2">
-                                    <i class="fas fa-map-marker-alt mr-2"></i>${toponim.emri}
+                                    <i class="fas fa-map-marker-alt mr-2"></i>${escapeHtml(toponim.emri)}
                                 </h4>
-                                <p class="text-gray-700 mb-2">${toponim.kuptimi}</p>
+                                <p class="text-gray-700 mb-2">${escapeHtml(toponim.kuptimi)}</p>
                                 <div class="flex items-center text-sm text-gray-600">
                                     <i class="fas fa-map-marker mr-1"></i>
-                                    <span>${toponim.vendndodhja}</span>
+                                    <span>${escapeHtml(toponim.vendndodhja)}</span>
                                 </div>
                             </div>
-                            <div class="bg-green-100 text-green-800 text-xs font-medium px-3 py-1 rounded-full">
+                            <div class="bg-green-100 text-green-800 text-xs font-medium px-3 py-1 rounded-full ml-4">
                                 <i class="fas fa-check-circle mr-1"></i>Miratuar
                             </div>
                         </div>
@@ -370,7 +516,10 @@
             kontejneri.innerHTML = html;
         }
 
-        // Funksioni për përpunimin e formës së këshillimit
+        // ============================================
+        // FUNKSIONET E KËSHILLIMIT
+        // ============================================
+
         function përpunoFormënKëshillimit(event) {
             event.preventDefault();
             
@@ -384,7 +533,7 @@
             }
             
             const këshillimIRi = {
-                id: këshillimeNëPritje.length > 0 ? Math.max(...këshillimeNëPritje.map(k => k.id)) + 1 : 201,
+                id: MenaxhuesiTëDhënave.merrIDRadhësKëshillim(),
                 emri: emri,
                 kuptimi: kuptimi,
                 vendndodhja: vendndodhja || "Nuk është specifikuar",
@@ -392,30 +541,40 @@
                 statusi: "në pritje"
             };
             
-            këshillimeNëPritje.push(këshillimIRi);
-            
-            // Pastro formën
-            document.getElementById("formaKëshillimit").reset();
-            
-            // Përditëso listën e këshillimeve në pritje nëse përgjegjësi është aktiv
-            if (ështëPërgjegjës) {
-                ngarkoKëshillimetNëPritje();
+            // Ruaj në localStorage
+            if (MenaxhuesiTëDhënave.shtoKëshillim(këshillimIRi)) {
+                // Pastro formën
+                document.getElementById("formaKëshillimit").reset();
+                
+                // Përditëso listën e këshillimeve nëse përgjegjësi është aktiv
+                if (ështëPërgjegjës) {
+                    ngarkoKëshillimetNëPritje();
+                }
+                
+                shfaqNjoftim(
+                    "Sukses", 
+                    `Këshillimi juaj për "${emri}" u dërgua me sukses! Një përgjegjës do ta shqyrtojë atë.`, 
+                    "theks"
+                );
+            } else {
+                shfaqNjoftim("Gabim", "Ndodhi një gabim gjatë ruajtjes së këshillimit. Ju lutem provoni përsëri.", "dytësor");
             }
-            
-            shfaqNjoftim("Sukses", "Këshillimi juaj u dërgua me sukses! Një përgjegjës do ta shqyrtojë atë.", "theks");
         }
 
-        // Funksioni për ndërrimin e mënyrës së përgjegjësit
+        // ============================================
+        // FUNKSIONET E PËRGJEGJËSIT
+        // ============================================
+
         function ndërroMënyrënPërgjegjësi() {
             if (!ështëPërgjegjës) {
                 // Kërko fjalëkalimin
                 const fjalëkalimi = prompt("Futni fjalëkalimin për të hyrë si përgjegjës:");
                 
-                if (fjalëkalimi === "admin123") { // Fjalëkalimi i thjeshtë për demonstrim
+                if (fjalëkalimi === "admin123") {
                     ështëPërgjegjës = true;
                     document.getElementById("ndërroModal").innerHTML = '<i class="fas fa-sign-out-alt mr-2"></i>Dil nga Mënyra Përgjegjësi';
-                    document.getElementById("ndërroModal").classList.remove("bg-theks");
-                    document.getElementById("ndërroModal").classList.add("bg-dytësor");
+                    document.getElementById("ndërroModal").classList.remove("bg-theks", "hover:bg-green-700");
+                    document.getElementById("ndërroModal").classList.add("bg-dytësor", "hover:bg-red-700");
                     document.getElementById("statusPërgjegjësi").innerHTML = '<i class="fas fa-user-shield mr-1"></i>Përgjegjës';
                     document.getElementById("statusPërgjegjësi").classList.remove("hidden");
                     document.getElementById("seksioniPërgjegjësi").classList.remove("hidden");
@@ -425,14 +584,14 @@
                     ngarkoToponimetTëMiratuara();
                     
                     shfaqNjoftim("Mirëseardhje", "Tani jeni në mënyrën e përgjegjësit.", "theks");
-                } else {
+                } else if (fjalëkalimi !== null) {
                     shfaqNjoftim("Gabim", "Fjalëkalimi i gabuar.", "dytësor");
                 }
             } else {
                 ështëPërgjegjës = false;
                 document.getElementById("ndërroModal").innerHTML = '<i class="fas fa-user-shield mr-2"></i>Mënyra Përgjegjësi';
-                document.getElementById("ndërroModal").classList.remove("bg-dytësor");
-                document.getElementById("ndërroModal").classList.add("bg-theks");
+                document.getElementById("ndërroModal").classList.remove("bg-dytësor", "hover:bg-red-700");
+                document.getElementById("ndërroModal").classList.add("bg-theks", "hover:bg-green-700");
                 document.getElementById("statusPërgjegjësi").innerHTML = '<i class="fas fa-user mr-1"></i>Vizitor';
                 document.getElementById("seksioniPërgjegjësi").classList.add("hidden");
                 
@@ -440,10 +599,10 @@
             }
         }
 
-        // Funksioni për ngarkimin e këshillimeve në pritje
         function ngarkoKëshillimetNëPritje() {
             const kontejneri = document.getElementById("listaKëshillimeveNëPritje");
             const numëruesi = document.getElementById("numëruesiNëPritje");
+            const këshillimeNëPritje = MenaxhuesiTëDhënave.merrKëshillime();
             
             numëruesi.textContent = këshillimeNëPritje.length;
             
@@ -463,15 +622,15 @@
                 html += `
                     <div class="border border-kufi rounded-lg p-4 bg-gray-50">
                         <div class="flex justify-between items-start mb-3">
-                            <h4 class="text-lg font-semibold text-gray-800">${këshillim.emri}</h4>
+                            <h4 class="text-lg font-semibold text-gray-800">${escapeHtml(këshillim.emri)}</h4>
                             <div class="bg-yellow-100 text-yellow-800 text-xs font-medium px-3 py-1 rounded-full">
                                 <i class="fas fa-clock mr-1"></i>Në Pritje
                             </div>
                         </div>
-                        <p class="text-gray-700 mb-3">${këshillim.kuptimi}</p>
+                        <p class="text-gray-700 mb-3">${escapeHtml(këshillim.kuptimi)}</p>
                         <div class="flex justify-between items-center">
                             <div class="text-sm text-gray-600">
-                                <i class="fas fa-map-marker-alt mr-1"></i>${këshillim.vendndodhja}
+                                <i class="fas fa-map-marker-alt mr-1"></i>${escapeHtml(këshillim.vendndodhja)}
                             </div>
                             <div class="flex space-x-2">
                                 <button onclick="miratoKëshillimin(${këshillim.id})" class="bg-theks text-white px-3 py-1 rounded text-sm hover:bg-green-700 kalim">
@@ -489,9 +648,9 @@
             kontejneri.innerHTML = html;
         }
 
-        // Funksioni për ngarkimin e toponimeve të miratuara në tabelë
         function ngarkoToponimetTëMiratuara() {
             const trupTabelës = document.getElementById("tabelaToponimeve");
+            const toponimeTëMiratuara = MenaxhuesiTëDhënave.merrToponime();
             
             if (toponimeTëMiratuara.length === 0) {
                 trupTabelës.innerHTML = `
@@ -508,9 +667,9 @@
             toponimeTëMiratuara.forEach(toponim => {
                 html += `
                     <tr>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${toponim.emri}</td>
-                        <td class="px-4 py-3 text-sm text-gray-700">${toponim.kuptimi}</td>
-                        <td class="px-4 py-3 text-sm text-gray-700">${toponim.vendndodhja}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHtml(toponim.emri)}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(toponim.kuptimi)}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(toponim.vendndodhja)}</td>
                         <td class="px-4 py-3 text-sm font-medium">
                             <button onclick="fshiToponim(${toponim.id})" class="text-dytësor hover:text-red-700 kalim">
                                 <i class="fas fa-trash mr-1"></i>Fshi
@@ -523,8 +682,12 @@
             trupTabelës.innerHTML = html;
         }
 
-        // Funksioni për miratimin e një këshillimi
+        // ============================================
+        // VEPRIMET E PËRGJEGJËSIT
+        // ============================================
+
         function miratoKëshillimin(id) {
+            const këshillimeNëPritje = MenaxhuesiTëDhënave.merrKëshillime();
             const këshillim = këshillimeNëPritje.find(k => k.id === id);
             if (!këshillim) return;
             
@@ -536,106 +699,99 @@
             document.getElementById("modalKonfirmimi").classList.remove("hidden");
         }
 
-        // Funksioni për fshirjen e një këshillimi
         function fshiKëshillimin(id) {
+            const këshillimeNëPritje = MenaxhuesiTëDhënave.merrKëshillime();
             const këshillim = këshillimeNëPritje.find(k => k.id === id);
             if (!këshillim) return;
             
             veprimiNëPritje = "fshiKëshillim";
-            tëDhënatVeprimit = { id };
+            tëDhënatVeprimit = { id, këshillim };
             
             document.getElementById("titulliModalit").textContent = "Refuzo Këshillimin";
             document.getElementById("mesazhiModalit").textContent = `A jeni i sigurt që dëshironi të refuzoni këshillimin për toponimin "${këshillim.emri}"?`;
             document.getElementById("modalKonfirmimi").classList.remove("hidden");
         }
 
-        // Funksioni për fshirjen e një toponimi të miratuar
         function fshiToponim(id) {
+            const toponimeTëMiratuara = MenaxhuesiTëDhënave.merrToponime();
             const toponim = toponimeTëMiratuara.find(t => t.id === id);
             if (!toponim) return;
             
             veprimiNëPritje = "fshiToponim";
-            tëDhënatVeprimit = { id };
+            tëDhënatVeprimit = { id, toponim };
             
             document.getElementById("titulliModalit").textContent = "Fshi Toponim";
             document.getElementById("mesazhiModalit").textContent = `A jeni i sigurt që dëshironi të fshini toponimin "${toponim.emri}"?`;
             document.getElementById("modalKonfirmimi").classList.remove("hidden");
         }
 
-        // Funksioni për fshehjen e modalit
+        // ============================================
+        // MODALI DHE KONFIRMIMI
+        // ============================================
+
         function fshehModal() {
             document.getElementById("modalKonfirmimi").classList.add("hidden");
             veprimiNëPritje = null;
             tëDhënatVeprimit = null;
         }
 
-        // Funksioni për konfirmimin e veprimit
         function konfirmoVeprimin() {
             if (!veprimiNëPritje || !tëDhënatVeprimit) return;
             
             if (veprimiNëPritje === "mirato") {
                 const { id, këshillim } = tëDhënatVeprimit;
                 
-                // Shto në listën e toponimeve të miratuara
-                const toponimIRi = {
-                    id: toponimeTëMiratuara.length > 0 ? Math.max(...toponimeTëMiratuara.map(t => t.id)) + 1 : 5,
-                    emri: këshillim.emri,
-                    kuptimi: këshillim.kuptimi,
-                    vendndodhja: këshillim.vendndodhja,
-                    dataMiratimit: new Date().toISOString().split('T')[0],
-                    statusi: "miratuar"
-                };
-                
-                toponimeTëMiratuara.push(toponimIRi);
-                
-                // Hiq nga listat e këshillimeve në pritje
-                këshillimeNëPritje = këshillimeNëPritje.filter(k => k.id !== id);
-                
-                // Përditëso të dyja listat
-                ngarkoKëshillimetNëPritje();
-                ngarkoToponimetTëMiratuara();
-                
-                // Përditëso rezultatet e kërkimit
-                kryejKërkimin();
-                
-                shfaqNjoftim("Sukses", `Toponimi "${këshillim.emri}" u miratua me sukses.`, "theks");
+                if (MenaxhuesiTëDhënave.miratoKëshillim(id)) {
+                    // Përditëso të dyja listat
+                    ngarkoKëshillimetNëPritje();
+                    ngarkoToponimetTëMiratuara();
+                    
+                    // Përditëso rezultatet e kërkimit
+                    kryejKërkimin();
+                    
+                    shfaqNjoftim("Sukses", `Toponimi "${këshillim.emri}" u miratua me sukses dhe është i dukshëm për të gjithë.`, "theks");
+                } else {
+                    shfaqNjoftim("Gabim", "Ndodhi një gabim gjatë miratimit të këshillimit.", "dytësor");
+                }
             }
             else if (veprimiNëPritje === "fshiKëshillim") {
-                const { id } = tëDhënatVeprimit;
-                const këshillim = këshillimeNëPritje.find(k => k.id === id);
+                const { id, këshillim } = tëDhënatVeprimit;
                 
-                // Hiq nga listat e këshillimeve në pritje
-                këshillimeNëPritje = këshillimeNëPritje.filter(k => k.id !== id);
-                
-                // Përditëso listën
-                ngarkoKëshillimetNëPritje();
-                
-                shfaqNjoftim("Sukses", `Këshillimi për toponimin "${këshillim.emri}" u refuzua.`, "kryesor");
+                if (MenaxhuesiTëDhënave.fshiKëshillim(id)) {
+                    // Përditëso listën
+                    ngarkoKëshillimetNëPritje();
+                    
+                    shfaqNjoftim("Sukses", `Këshillimi për toponimin "${këshillim.emri}" u refuzua.`, "kryesor");
+                } else {
+                    shfaqNjoftim("Gabim", "Ndodhi një gabim gjatë refuzimit të këshillimit.", "dytësor");
+                }
             }
             else if (veprimiNëPritje === "fshiToponim") {
-                const { id } = tëDhënatVeprimit;
-                const toponim = toponimeTëMiratuara.find(t => t.id === id);
+                const { id, toponim } = tëDhënatVeprimit;
                 
-                // Hiq nga listat e toponimeve të miratuara
-                toponimeTëMiratuara = toponimeTëMiratuara.filter(t => t.id !== id);
-                
-                // Përditëso listën
-                ngarkoToponimetTëMiratuara();
-                
-                // Përditëso rezultatet e kërkimit
-                kryejKërkimin();
-                
-                shfaqNjoftim("Sukses", `Toponimi "${toponim.emri}" u fshi me sukses.`, "kryesor");
+                if (MenaxhuesiTëDhënave.fshiToponim(id)) {
+                    // Përditëso listën
+                    ngarkoToponimetTëMiratuara();
+                    
+                    // Përditëso rezultatet e kërkimit
+                    kryejKërkimin();
+                    
+                    shfaqNjoftim("Sukses", `Toponimi "${toponim.emri}" u fshi me sukses.`, "kryesor");
+                } else {
+                    shfaqNjoftim("Gabim", "Ndodhi një gabim gjatë fshirjes së toponimit.", "dytësor");
+                }
             }
             
             fshehModal();
         }
 
-        // Funksioni për shfaqjen e njoftimeve
+        // ============================================
+        // FUNKSIONE NDIHMËSE
+        // ============================================
+
         function shfaqNjoftim(titulli, mesazhi, lloji) {
-            // Krijoni një element njoftimi
             const njoftim = document.createElement("div");
-            njoftim.className = `fixed top-4 right-4 z-50 rounded-lg p-4 text-white shadow-lg kalim`;
+            njoftim.className = `fixed top-4 right-4 z-50 rounded-lg p-4 text-white shadow-lg kalim max-w-md`;
             
             let ngjyra = "bg-kryesor";
             if (lloji === "theks") ngjyra = "bg-theks";
@@ -644,15 +800,15 @@
             njoftim.className += ` ${ngjyra}`;
             
             njoftim.innerHTML = `
-                <div class="flex items-center">
+                <div class="flex items-start">
                     <div class="flex-shrink-0">
                         <i class="fas fa-${lloji === "dytësor" ? "exclamation-triangle" : "check-circle"} text-xl"></i>
                     </div>
-                    <div class="ml-3">
-                        <h4 class="font-semibold">${titulli}</h4>
-                        <p class="text-sm opacity-90">${mesazhi}</p>
+                    <div class="ml-3 flex-grow">
+                        <h4 class="font-semibold">${escapeHtml(titulli)}</h4>
+                        <p class="text-sm opacity-90 mt-1">${escapeHtml(mesazhi)}</p>
                     </div>
-                    <button onclick="this.parentElement.parentElement.remove()" class="ml-auto text-white hover:text-gray-200">
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -668,8 +824,37 @@
             }, 5000);
         }
 
-        // Inicializo faqen kur të jetë gati
+        // Funksion për të shmangur XSS
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // ============================================
+        // INICIALIZIMI
+        // ============================================
+
         document.addEventListener("DOMContentLoaded", inicializoFaqen);
+
+        // Për testim në console (opsionale - mund të fshihet)
+        window.debugTools = {
+            resetData: () => {
+                if (confirm("A jeni i sigurt që dëshironi të fshini të gjitha të dhënat dhe të resetoni në gjendjen fillestare?")) {
+                    MenaxhuesiTëDhënave.resetoTëDhënat();
+                    location.reload();
+                }
+            },
+            showData: () => {
+                console.log("Toponime:", MenaxhuesiTëDhënave.merrToponime());
+                console.log("Këshillime:", MenaxhuesiTëDhënave.merrKëshillime());
+            }
+        };
     </script>
 </body>
 </html>
